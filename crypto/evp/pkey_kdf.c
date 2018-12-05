@@ -8,6 +8,7 @@
  * https://www.openssl.org/source/license.html
  */
 
+#include <string.h>
 #include <openssl/evp.h>
 #include <openssl/err.h>
 #include <openssl/kdf.h>
@@ -124,6 +125,8 @@ static int pkey_kdf_ctrl_str(EVP_PKEY_CTX *ctx, const char *type,
 {
     EVP_KDF_CTX *kctx = ctx->data;
 
+    if (strcmp(type, "md") == 0)
+        return EVP_KDF_ctrl_str(kctx, "digest", value);
     return EVP_KDF_ctrl_str(kctx, type, value);
 }
 

@@ -156,7 +156,7 @@ static int kdf_pbkdf2_ctrl_str(EVP_KDF_IMPL *impl, const char *type,
         return call_ctrl(kdf_pbkdf2_ctrl, impl, EVP_KDF_CTRL_SET_ITER,
                          atoi(value));
 
-    if (strcmp(type, "md") == 0)
+    if (strcmp(type, "digest") == 0)
         return kdf_md2ctrl(impl, kdf_pbkdf2_ctrl, EVP_KDF_CTRL_SET_MD, value);
 
     return -2;

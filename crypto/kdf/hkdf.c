@@ -153,7 +153,7 @@ static int kdf_hkdf_ctrl_str(EVP_KDF_IMPL *impl, const char *type,
         return call_ctrl(kdf_hkdf_ctrl, impl, EVP_KDF_CTRL_SET_HKDF_MODE, mode);
     }
 
-    if (strcmp(type, "md") == 0)
+    if (strcmp(type, "digest") == 0)
         return kdf_md2ctrl(impl, kdf_hkdf_ctrl, EVP_KDF_CTRL_SET_MD, value);
 
     if (strcmp(type, "salt") == 0)

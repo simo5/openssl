@@ -115,7 +115,7 @@ static int kdf_tls1_prf_ctrl_str(EVP_KDF_IMPL *impl,
         KDFerr(KDF_F_KDF_TLS1_PRF_CTRL_STR, KDF_R_VALUE_MISSING);
         return 0;
     }
-    if (strcmp(type, "md") == 0)
+    if (strcmp(type, "digest") == 0)
         return kdf_md2ctrl(impl, kdf_tls1_prf_ctrl, EVP_KDF_CTRL_SET_MD, value);
 
     if (strcmp(type, "secret") == 0)
