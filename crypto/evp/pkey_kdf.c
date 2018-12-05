@@ -37,6 +37,7 @@ static int pkey_kdf_ctrl(EVP_PKEY_CTX *ctx, int type, int p1, void *p2)
     EVP_KDF_CTX *kctx = ctx->data;
     uint64_t u64_value;
     int cmd;
+    int ret;
 
     switch (type) {
     case EVP_PKEY_CTRL_PASS:
@@ -52,6 +53,9 @@ static int pkey_kdf_ctrl(EVP_PKEY_CTX *ctx, int type, int p1, void *p2)
         break;
     case EVP_PKEY_CTRL_TLS_SECRET:
         cmd = EVP_KDF_CTRL_SET_TLS_SECRET;
+        ret = EVP_KDF_ctrl(kctx, EVP_KDF_CTRL_RESET_TLS_SEED);
+        if (ret < 1)
+            return ret;
         break;
     case EVP_PKEY_CTRL_TLS_SEED:
         cmd = EVP_KDF_CTRL_ADD_TLS_SEED;

@@ -35,7 +35,7 @@ PRF algorithm using both B<MD5> and B<SHA1> as used in TLS 1.0 and 1.1.
 This control expects two arguments: C<unsigned char *sec>, C<size_t seclen>
 
 Sets the secret value of the TLS PRF to B<seclen> bytes of the buffer B<sec>.
-Any existing secret value is replaced and any seed is reset.
+Any existing secret value is replaced.
 
 EVP_KDF_ctrl_str() takes two type strings for this control:
 
@@ -52,6 +52,12 @@ decoded before being passed on as the control value.
 
 =back
 
+=item B<EVP_KDF_CTRL_RESET_TLS_SEED>
+
+This control does not expect any arguments.
+
+Resets the context seed buffer to zero length.
+
 =item B<EVP_KDF_CTRL_ADD_TLS_SEED>
 
 This control expects two arguments: C<unsigned char *seed>, C<size_t seedlen>
@@ -59,7 +65,7 @@ This control expects two arguments: C<unsigned char *seed>, C<size_t seedlen>
 Sets the seed to B<seedlen> bytes of B<seed>.  If a seed is already set it is
 appended to the existing value.
 
-The total length of the context seed buffer cannot exceed 1024 bytes in length;
+The total length of the context seed buffer cannot exceed 1024 bytes;
 this should be more than enough for any normal use of the TLS PRF.
 
 EVP_KDF_ctrl_str() takes two type strings for this control:

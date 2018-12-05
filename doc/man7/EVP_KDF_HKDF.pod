@@ -34,6 +34,12 @@ The supported controls are:
 
 These controls work as described in L<EVP_KDF_CTX(3)/CONTROLS>.
 
+=item B<EVP_KDF_CTRL_RESET_HKDF_INFO>
+
+This control does not expect any arguments.
+
+Resets the context info buffer to zero length.
+
 =item B<EVP_KDF_CTRL_ADD_HKDF_INFO>
 
 This control expects two arguments: C<unsigned char *info>, C<size_t infolen>
@@ -42,7 +48,7 @@ Sets the info value to the first B<infolen> bytes of the buffer B<info>.  If a
 value is already set, the contents of the buffer are appended to the existing
 value.
 
-The total length of the context info buffer cannot exceed 1024 bytes in length;
+The total length of the context info buffer cannot exceed 1024 bytes;
 this should be more than enough for any normal use of HKDF.
 
 EVP_KDF_ctrl_str() takes two type strings for this control:

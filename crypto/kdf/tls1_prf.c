@@ -78,13 +78,16 @@ static int kdf_tls1_prf_ctrl(EVP_KDF_IMPL *impl, int cmd, va_list args)
         p = va_arg(args, const unsigned char *);
         len = va_arg(args, size_t);
         OPENSSL_clear_free(impl->sec, impl->seclen);
-        OPENSSL_cleanse(impl->seed, impl->seedlen);
-        impl->seedlen = 0;
         impl->sec = OPENSSL_memdup(p, len);
         if (impl->sec == NULL)
             return 0;
 
         impl->seclen  = len;
+        return 1;
+
+    case EVP_KDF_CTRL_RESET_TLS_SEED:
+        OPENSSL_cleanse(impl->seed, impl->seedlen);
+        impl->seedlen = 0;
         return 1;
 
     case EVP_KDF_CTRL_ADD_TLS_SEED:

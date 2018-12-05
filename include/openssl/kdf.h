@@ -39,12 +39,14 @@ int EVP_KDF_derive(EVP_KDF_CTX *ctx, unsigned char *key, size_t keylen);
 # define EVP_KDF_CTRL_SET_KEY           0x05 /* unsigned char *, size_t */
 # define EVP_KDF_CTRL_SET_MAXMEM_BYTES  0x06 /* uint64_t */
 # define EVP_KDF_CTRL_SET_TLS_SECRET    0x07 /* unsigned char *, size_t */
-# define EVP_KDF_CTRL_ADD_TLS_SEED      0x08 /* unsigned char *, size_t */
-# define EVP_KDF_CTRL_ADD_HKDF_INFO     0x09 /* unsigned char *, size_t */
-# define EVP_KDF_CTRL_SET_HKDF_MODE     0x0a /* int */
-# define EVP_KDF_CTRL_SET_SCRYPT_N      0x0b /* uint64_t */
-# define EVP_KDF_CTRL_SET_SCRYPT_R      0x0c /* uint32_t */
-# define EVP_KDF_CTRL_SET_SCRYPT_P      0x0d /* uint32_t */
+# define EVP_KDF_CTRL_RESET_TLS_SEED    0x08
+# define EVP_KDF_CTRL_ADD_TLS_SEED      0x09 /* unsigned char *, size_t */
+# define EVP_KDF_CTRL_RESET_HKDF_INFO   0x0a
+# define EVP_KDF_CTRL_ADD_HKDF_INFO     0x0b /* unsigned char *, size_t */
+# define EVP_KDF_CTRL_SET_HKDF_MODE     0x0c /* int */
+# define EVP_KDF_CTRL_SET_SCRYPT_N      0x0d /* uint64_t */
+# define EVP_KDF_CTRL_SET_SCRYPT_R      0x0e /* uint32_t */
+# define EVP_KDF_CTRL_SET_SCRYPT_P      0x0f /* uint32_t */
 
 # define EVP_KDF_HKDF_MODE_EXTRACT_AND_EXPAND  0
 # define EVP_KDF_HKDF_MODE_EXTRACT_ONLY        1

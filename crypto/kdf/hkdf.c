@@ -112,6 +112,11 @@ static int kdf_hkdf_ctrl(EVP_KDF_IMPL *impl, int cmd, va_list args)
         impl->key_len  = len;
         return 1;
 
+    case EVP_KDF_CTRL_RESET_HKDF_INFO:
+        OPENSSL_cleanse(impl->info, impl->info_len);
+        impl->info_len = 0;
+        return 1;
+
     case EVP_KDF_CTRL_ADD_HKDF_INFO:
         p = va_arg(args, const unsigned char *);
         len = va_arg(args, size_t);
