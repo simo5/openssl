@@ -51,6 +51,9 @@ int ERR_load_EVP_strings(void);
 # define EVP_F_EVP_ENCRYPTDECRYPTUPDATE                   219
 # define EVP_F_EVP_ENCRYPTFINAL_EX                        127
 # define EVP_F_EVP_ENCRYPTUPDATE                          167
+# define EVP_F_EVP_KDF_CTRL                               220
+# define EVP_F_EVP_KDF_CTRL_STR                           221
+# define EVP_F_EVP_KDF_CTX_NEW_ID                         222
 # define EVP_F_EVP_MAC_CTRL                               209
 # define EVP_F_EVP_MAC_CTRL_STR                           210
 # define EVP_F_EVP_MAC_CTX_COPY                           211
@@ -121,6 +124,7 @@ int ERR_load_EVP_strings(void);
 # define EVP_F_PKCS5_V2_PBE_KEYIVGEN                      118
 # define EVP_F_PKCS5_V2_PBKDF2_KEYIVGEN                   164
 # define EVP_F_PKCS5_V2_SCRYPT_KEYIVGEN                   180
+# define EVP_F_PKEY_KDF_CTRL                              223
 # define EVP_F_PKEY_MAC_INIT                              214
 # define EVP_F_PKEY_SET_TYPE                              158
 # define EVP_F_POLY1305_CTRL                              216
@@ -128,6 +132,7 @@ int ERR_load_EVP_strings(void);
 # define EVP_F_RC5_CTRL                                   125
 # define EVP_F_S390X_AES_GCM_CTRL                         201
 # define EVP_F_S390X_AES_GCM_TLS_CIPHER                   208
+# define EVP_F_SCRYPT_ALG                                 224
 # define EVP_F_UPDATE                                     173
 
 /*
@@ -183,6 +188,7 @@ int ERR_load_EVP_strings(void);
 # define EVP_R_ONLY_ONESHOT_SUPPORTED                     177
 # define EVP_R_OPERATION_NOT_SUPPORTED_FOR_THIS_KEYTYPE   150
 # define EVP_R_OPERATON_NOT_INITIALIZED                   151
+# define EVP_R_PARAMETER_TOO_LARGE                        186
 # define EVP_R_PARTIALLY_OVERLAPPING                      162
 # define EVP_R_PBKDF2_ERROR                               181
 # define EVP_R_PKEY_APPLICATION_ASN1_METHOD_ALREADY_REGISTERED 179

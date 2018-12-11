@@ -4620,3 +4620,11 @@ CRYPTO_siv128_set_tag                   4575	3_0_0	EXIST::FUNCTION:SIV
 CRYPTO_siv128_get_tag                   4576	3_0_0	EXIST::FUNCTION:SIV
 CRYPTO_siv128_cleanup                   4577	3_0_0	EXIST::FUNCTION:SIV
 CRYPTO_siv128_speed                     4578	3_0_0	EXIST::FUNCTION:SIV
+EVP_KDF_CTX_new_id                      4579	3_0_0	EXIST::FUNCTION:
+EVP_KDF_CTX_free                        4580	3_0_0	EXIST::FUNCTION:
+EVP_KDF_reset                           4581	3_0_0	EXIST::FUNCTION:
+EVP_KDF_ctrl                            4582	3_0_0	EXIST::FUNCTION:
+EVP_KDF_vctrl                           4583	3_0_0	EXIST::FUNCTION:
+EVP_KDF_ctrl_str                        4584	3_0_0	EXIST::FUNCTION:
+EVP_KDF_size                            4585	3_0_0	EXIST::FUNCTION:
+EVP_KDF_derive                          4586	3_0_0	EXIST::FUNCTION:
