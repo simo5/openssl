@@ -550,6 +550,10 @@ extern "C" {
 /* OSSL_DECODER input type if a decoder is used by the store */
 #define OSSL_STORE_PARAM_INPUT_TYPE "input-type"   /* UTF8_STRING */
 
+
+/* FIPS Indicators for FIPS-140-3 */
+#define OSSL_FIPS_PARAM_INDICATOR "fips-indicator" /* UTF8_STRING */
+
 # ifdef __cplusplus
 }
 # endif

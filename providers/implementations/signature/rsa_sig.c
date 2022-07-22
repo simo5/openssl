@@ -73,6 +73,7 @@ static OSSL_ITEM padding_item[] = {
  */
 
 typedef struct {
+    void *provctx;
     OSSL_LIB_CTX *libctx;
     char *propq;
     RSA *rsa;
@@ -186,6 +187,7 @@ static void *rsa_newctx(void *provctx, const char *propq)
         return NULL;
     }
 
+    prsactx->provctx = provctx;
     prsactx->libctx = PROV_LIBCTX_OF(provctx);
     prsactx->flag_allow_md = 1;
     prsactx->propq = propq_copy;
@@ -1123,6 +1125,41 @@ static int rsa_get_ctx_params(void *vprsactx, OSSL_PARAM *params)
                 return 0;
         }
     }
+    p = OSSL_PARAM_locate(params, OSSL_FIPS_PARAM_INDICATOR);
+    if (p != NULL) {
+        int approved = 1;
+        int key_size = 0;
+        const OSSL_PROVIDER *mdprov;
+
+        /* check that the digest, if present is also fips */
+        /* TODO in future get_params from the MD ctx, as the MD
+         * might be implemented by a different validated provider */
+        if (prsactx->md != NULL) {
+            mdprov = EVP_MD_get0_provider(prsactx->md);
+            if (OSSL_PROVIDER_get0_provider_ctx(mdprov) != prsactx->provctx)
+                approved = 0;
+            /* special case for sha1 */
+            if ((prsactx->operation & EVP_PKEY_OP_SIGN) &&
+                prsactx->mdname[0] != '\0' &&
+                OPENSSL_strcasecmp(prsactx->mdname, "SHA1") == 0) {
+                approved = 0;
+            }
+        }
+        if (prsactx->operation & EVP_PKEY_OP_VERIFY) {
+            /* no raw sigver tests */
+            if (prsactx->md == NULL) approved = 0;
+        }
+        key_size = RSA_size(prsactx->rsa);
+        if (key_size < 1024) approved = 0;
+        if (key_size > 1024 && key_size < 1280) approved = 0;
+        if (key_size > 1280 && key_size < 1536) approved = 0;
+        if (key_size > 1536 && key_size < 1792) approved = 0;
+        if (key_size > 1792 && key_size < 2048) approved = 0;
+
+        /* TODO: any other check */
+        if (approved) OSSL_PARAM_set_utf8_string(p, "approved");
+        else OSSL_PARAM_set_utf8_string(p, "unapproved");
+    }
 
     return 1;
 }
@@ -1133,6 +1170,9 @@ static const OSSL_PARAM known_gettable_ctx_params[] = {
     OSSL_PARAM_utf8_string(OSSL_SIGNATURE_PARAM_DIGEST, NULL, 0),
     OSSL_PARAM_utf8_string(OSSL_SIGNATURE_PARAM_MGF1_DIGEST, NULL, 0),
     OSSL_PARAM_utf8_string(OSSL_SIGNATURE_PARAM_PSS_SALTLEN, NULL, 0),
+#ifdef FIPS_MODULE
+    OSSL_PARAM_utf8_string(OSSL_FIPS_PARAM_INDICATOR, NULL, 0),
+#endif
     OSSL_PARAM_END
 };
 
