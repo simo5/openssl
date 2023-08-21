@@ -5947,3 +5947,5 @@ CRYPTO_realloc_array                    6074	3_6_0	EXIST::FUNCTION:
 CRYPTO_clear_realloc_array              6075	3_6_0	EXIST::FUNCTION:
 CRYPTO_secure_malloc_array              6076	3_6_0	EXIST::FUNCTION:
 CRYPTO_secure_calloc                    6077	3_6_0	EXIST::FUNCTION:
+ossl_ctx_legacy_digest_signatures_allowed ?	3_0_1	EXIST::FUNCTION:
+ossl_ctx_legacy_digest_signatures_allowed_set ?	3_0_1	EXIST::FUNCTION:
