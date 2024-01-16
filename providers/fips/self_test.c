@@ -349,6 +349,7 @@ static int verify_integrity_rodata(OSSL_CORE_BIO *bio,
         goto err;
     ret = 1;
 err:
+    OPENSSL_cleanse(out, MAX_MD_SIZE);
     OSSL_SELF_TEST_onend(ev, ret);
     EVP_MAC_CTX_free(ctx);
     EVP_MAC_free(mac);
@@ -403,6 +404,7 @@ static int verify_integrity(OSSL_CORE_BIO *bio,
         goto err;
     ret = 1;
 err:
+    OPENSSL_cleanse(out, MAX_MD_SIZE);
     OSSL_SELF_TEST_onend(ev, ret);
     EVP_MAC_CTX_free(ctx);
     EVP_MAC_free(mac);
