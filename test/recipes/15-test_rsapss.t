@@ -19,7 +19,7 @@ setup("test_rsapss");
 plan tests => 18;
 
 #using test/testrsa.pem which happens to be a 512 bit RSA
-ok(run(app(['openssl', 'dgst', '-sign', srctop_file('test', 'testrsa.pem'), '-sha1',
+ok(run(app(['openssl', 'dgst', '-sign', srctop_file('test', 'testrsa.pem'), '-sha384',
             '-sigopt', 'rsa_padding_mode:pss',
             '-sigopt', 'rsa_pss_saltlen:max',
             '-sigopt', 'rsa_mgf1_md:sha512',
@@ -27,7 +27,7 @@ ok(run(app(['openssl', 'dgst', '-sign', srctop_file('test', 'testrsa.pem'), '-sh
             srctop_file('test', 'testrsa.pem')])),
    "openssl dgst -sign [plain RSA key, PSS padding mode, PSS restrictions]");
 
-ok(run(app(['openssl', 'dgst', '-sign', srctop_file('test', 'testrsa.pem'), '-sha1',
+ok(run(app(['openssl', 'dgst', '-sign', srctop_file('test', 'testrsa.pem'), '-sha384',
             '-sigopt', 'rsa_padding_mode:pss',
             '-out', 'testrsapss-unrestricted.sig',
             srctop_file('test', 'testrsa.pem')])),
@@ -40,7 +40,7 @@ ok(!run(app(['openssl', 'dgst', '-sign', srctop_file('test', 'testrsa.pem'), '-s
 
 ok(!run(app(['openssl', 'dgst', '-sign', srctop_file('test', 'testrsa.pem'), '-sha512',
              '-sigopt', 'rsa_padding_mode:pss', '-sigopt', 'rsa_pss_saltlen:2147483647',
-             '-sigopt', 'rsa_mgf1_md:sha1', srctop_file('test', 'testrsa.pem')])),
+             '-sigopt', 'rsa_mgf1_md:sha384', srctop_file('test', 'testrsa.pem')])),
    "openssl dgst -sign, expect to fail gracefully");
 
 ok(!run(app(['openssl', 'dgst', '-prverify', srctop_file('test', 'testrsa.pem'), '-sha512',
@@ -50,7 +50,7 @@ ok(!run(app(['openssl', 'dgst', '-prverify', srctop_file('test', 'testrsa.pem'),
    "openssl dgst -prverify, expect to fail gracefully");
 
 ok(run(app(['openssl', 'dgst', '-prverify', srctop_file('test', 'testrsa.pem'),
-            '-sha1',
+            '-sha384',
             '-sigopt', 'rsa_padding_mode:pss',
             '-sigopt', 'rsa_pss_saltlen:max',
             '-sigopt', 'rsa_mgf1_md:sha512',
@@ -59,42 +59,42 @@ ok(run(app(['openssl', 'dgst', '-prverify', srctop_file('test', 'testrsa.pem'),
    "openssl dgst -prverify [plain RSA key, PSS padding mode, PSS restrictions]");
 
 ok(run(app(['openssl', 'dgst', '-prverify', srctop_file('test', 'testrsa.pem'),
-            '-sha1',
+            '-sha384',
             '-sigopt', 'rsa_padding_mode:pss',
-            '-sigopt', 'rsa_pss_saltlen:42',
+            '-sigopt', 'rsa_pss_saltlen:14',
             '-sigopt', 'rsa_mgf1_md:sha512',
             '-signature', 'testrsapss-restricted.sig',
             srctop_file('test', 'testrsa.pem')])),
-   "openssl dgst -sign rsa512bit.pem -sha1 -sigopt rsa_pss_saltlen:max produces 42 bits of PSS salt");
+   "openssl dgst -sign rsa512bit.pem -sha384 -sigopt rsa_pss_saltlen:max produces 14 bits of PSS salt");
 
 ok(run(app(['openssl', 'dgst', '-prverify', srctop_file('test', 'testrsa.pem'),
-            '-sha1',
+            '-sha384',
             '-sigopt', 'rsa_padding_mode:pss',
             '-sigopt', 'rsa_pss_saltlen:auto-digestmax',
             '-sigopt', 'rsa_mgf1_md:sha512',
             '-signature', 'testrsapss-restricted.sig',
             srctop_file('test', 'testrsa.pem')])),
-   "openssl dgst -prverify rsa512bit.pem -sha1 -sigopt rsa_pss_saltlen:auto-digestmax verifies signatures with saltlen > digestlen");
+   "openssl dgst -prverify rsa512bit.pem -sha384 -sigopt rsa_pss_saltlen:auto-digestmax verifies signatures with saltlen > digestlen");
 
 ok(run(app(['openssl', 'dgst', '-prverify', srctop_file('test', 'testrsa.pem'),
-            '-sha1',
+            '-sha384',
             '-sigopt', 'rsa_padding_mode:pss',
             '-signature', 'testrsapss-unrestricted.sig',
             srctop_file('test', 'testrsa.pem')])),
    "openssl dgst -prverify [plain RSA key, PSS padding mode, no PSS restrictions]");
 
-ok(run(app(['openssl', 'dgst', '-sign', srctop_file('test', 'testrsa.pem'), '-sha1',
+ok(run(app(['openssl', 'dgst', '-sign', srctop_file('test', 'testrsa.pem'), '-sha384',
             '-sigopt', 'rsa_padding_mode:pss',
             '-sigopt', 'rsa_pss_saltlen:auto-digestmax',
-            '-out', 'testrsapss-sha1-autodigestmax.sig',
+            '-out', 'testrsapss-sha384-autodigestmax.sig',
             srctop_file('test', 'testrsa.pem')])),
-   "openssl dgst -sign -sha1 -rsa_pss_saltlen:auto-digestmax");
-ok(run(app(['openssl', 'dgst', '-prverify', srctop_file('test', 'testrsa.pem'), '-sha1',
+   "openssl dgst -sign -sha384 -rsa_pss_saltlen:auto-digestmax");
+ok(run(app(['openssl', 'dgst', '-prverify', srctop_file('test', 'testrsa.pem'), '-sha384',
             '-sigopt', 'rsa_padding_mode:pss',
-            '-sigopt', 'rsa_pss_saltlen:20',
-            '-signature', 'testrsapss-sha1-autodigestmax.sig',
+            '-sigopt', 'rsa_pss_saltlen:14',
+            '-signature', 'testrsapss-sha384-autodigestmax.sig',
             srctop_file('test', 'testrsa.pem')])),
-   "openssl dgst -sign -sha1 -rsa_padding_mode:auto-digestmax produces 20 (i.e., digestlen) bits of PSS salt");
+   "openssl dgst -sign -sha384 -rsa_padding_mode:auto-digestmax produces 14 (i.e., digestlen) bits of PSS salt");
 
 ok(run(app(['openssl', 'dgst', '-sign', srctop_file('test', 'testrsa.pem'), '-sha256',
             '-sigopt', 'rsa_padding_mode:pss',

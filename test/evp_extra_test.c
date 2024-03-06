@@ -3875,6 +3875,7 @@ static int test_EVP_PKEY_CTX_get_set_params(EVP_PKEY *pkey)
         || !TEST_ptr_eq(md, EVP_sha256()))
         goto err;
 
+#if 0 /* this section only works with SHA-1, no other digest has settables */
     /*
      * Test getting MD parameters via an associated EVP_PKEY_CTX
      */
@@ -3903,6 +3904,7 @@ static int test_EVP_PKEY_CTX_get_set_params(EVP_PKEY *pkey)
 
     if (!TEST_true(EVP_MD_CTX_set_params(mdctx, ourparams)))
         goto err;
+#endif
 
     ret = 1;
 

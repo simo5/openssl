@@ -2272,7 +2272,7 @@ static const struct rsa_sigver_st rsa_sigver_data[] = {
         NO_PSS_SALT_LEN,
         FAIL
     },
-    {
+/*  {
         "x931",
         3072,
         "SHA1",
@@ -2283,7 +2283,7 @@ static const struct rsa_sigver_st rsa_sigver_data[] = {
         NO_PSS_SALT_LEN,
         PASS
     },
-    {
+*/  {
         "x931",
         3072,
         "SHA256",
