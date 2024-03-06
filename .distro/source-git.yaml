@@ -1,0 +1,20 @@
+upstream_project_url: https://github.com/openssl/openssl.git
+upstream_ref: openssl-3.2.1
+downstream_package_name: openssl
+specfile_path: .distro/openssl.spec
+patch_generation_ignore_paths:
+- .distro
+patch_generation_patch_id_digits: 1
+sync_changelog: true
+files_to_sync:
+- src: .distro/
+  dest: .
+  delete: true
+  filters:
+  - protect .git*
+  - protect sources
+  - exclude source-git.yaml
+  - exclude .gitignore
+sources:
+- path: openssl-3.2.1.tar.gz
+  url: https://src.fedoraproject.org/repo/pkgs/rpms/openssl/openssl-3.2.1.tar.gz/sha512/29ea75964f78ef5bbe5783ed60d32917408ae4cb7d4aecdbbf2280bfdbc260c7cbabbc03bd179fc994fbee85cebc7213eeb5bfcde5c22db5e83edf2cebe7113f/openssl-3.2.1.tar.gz
