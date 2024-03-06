@@ -44,6 +44,14 @@ int RSA_padding_add_PKCS1_OAEP(unsigned char *to, int tlen,
         param, plen, NULL, NULL);
 }
 
+#ifdef FIPS_MODULE
+/* We count on the fact that the self-test infrastruture blocks concurrent
+ * calls to RSA encryption during a KAT test, and therefore the fact this
+ * is a global variable won't cause issues because it is ever only set during
+ * a self-test and no concurrent use should ever happen */
+unsigned char *REDHAT_FIPS_oaep_test_seed = NULL;
+#endif
+
 /*
  * Perform the padding as per NIST 800-56B 7.2.2.3
  *      from (K) is the key material.
@@ -119,6 +127,11 @@ int ossl_rsa_padding_add_PKCS1_OAEP_mgf1_ex(OSSL_LIB_CTX *libctx,
     db[emlen - flen - mdlen - 1] = 0x01;
     memcpy(db + emlen - flen - mdlen, from, (unsigned int)flen);
     /* step 3d: generate random byte string */
+#ifdef FIPS_MODULE
+    if (REDHAT_FIPS_oaep_test_seed != NULL)
+        memcpy(seed, REDHAT_FIPS_oaep_test_seed, mdlen);
+    else
+#endif
     if (RAND_bytes_ex(libctx, seed, mdlen, 0) <= 0)
         goto err;
 

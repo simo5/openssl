@@ -103,6 +103,10 @@ static void *rsa_newctx(void *provctx)
     return prsactx;
 }
 
+#ifdef FIPS_MODULE
+extern unsigned char *REDHAT_FIPS_oaep_test_seed;
+#endif
+
 static int rsa_init(void *vprsactx, void *vrsa, const OSSL_PARAM params[],
     int operation, const char *desc)
 {
@@ -130,6 +134,13 @@ static int rsa_init(void *vprsactx, void *vrsa, const OSSL_PARAM params[],
         ERR_raise(ERR_LIB_PROV, ERR_R_INTERNAL_ERROR);
         return 0;
     }
+
+#ifdef FIPS_MODULE
+    /* Always initialize to NULL just in case, this is only used once during
+     * self-tests and should alays be NULL othewise. It is set by
+     * rsa_set_ctx_params() as needed */
+    REDHAT_FIPS_oaep_test_seed = NULL;
+#endif
 
     OSSL_FIPS_IND_SET_APPROVED(prsactx)
     if (!rsa_set_ctx_params(prsactx, params))
@@ -183,6 +194,18 @@ static int rsa_encrypt(void *vprsactx, unsigned char *out, size_t *outlen,
         ERR_raise(ERR_LIB_PROV, PROV_R_INVALID_KEY);
         return 0;
     }
+
+# ifdef FIPS_MODULE
+    if (prsactx->pad_mode == RSA_NO_PADDING) {
+        ERR_raise(ERR_LIB_PROV, PROV_R_INVALID_PADDING_MODE);
+        return 0;
+    }
+
+    if (RSA_bits(prsactx->rsa) < OPENSSL_RSA_FIPS_MIN_MODULUS_BITS) {
+        ERR_raise(ERR_LIB_PROV, PROV_R_INVALID_KEY_LENGTH);
+        return 0;
+    }
+# endif
 
     if (out == NULL) {
         *outlen = len;
@@ -243,6 +266,20 @@ static int rsa_decrypt(void *vprsactx, unsigned char *out, size_t *outlen,
 
     if (!ossl_prov_is_running())
         return 0;
+
+# ifdef FIPS_MODULE
+    if ((prsactx->pad_mode == RSA_PKCS1_PADDING
+         || prsactx->pad_mode == RSA_PKCS1_WITH_TLS_PADDING
+         || prsactx->pad_mode == RSA_NO_PADDING)) {
+        ERR_raise(ERR_LIB_PROV, PROV_R_INVALID_PADDING_MODE);
+        return 0;
+    }
+
+    if (RSA_bits(prsactx->rsa) < OPENSSL_RSA_FIPS_MIN_MODULUS_BITS) {
+        ERR_raise(ERR_LIB_PROV, PROV_R_INVALID_KEY_LENGTH);
+        return 0;
+    }
+# endif
 
     if (prsactx->pad_mode == RSA_PKCS1_WITH_TLS_PADDING) {
         if (out == NULL) {
@@ -577,6 +614,12 @@ static int rsa_set_ctx_params(void *vprsactx, const OSSL_PARAM params[])
             return 0;
         prsactx->implicit_rejection = implicit_rejection;
     }
+
+#ifdef FIPS_MODULE
+    if (p.kat_oaep_seed) {
+        REDHAT_FIPS_oaep_test_seed = (unsigned char *)p.kat_oaep_seed->data;
+    }
+#endif
     return 1;
 }
 
