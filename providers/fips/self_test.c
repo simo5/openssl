@@ -204,11 +204,133 @@ DEP_FINI_ATTRIBUTE void cleanup(void)
 #endif
 
 #if !defined(OPENSSL_NO_FIPS_POST)
+
+#define HMAC_LEN 32
+/*
+ * The __attribute__ ensures we've created the .rodata1 section
+ * static ensures it's zero filled
+*/
+static const unsigned char __attribute__ ((section (".rodata1"))) fips_hmac_container[HMAC_LEN] = {0};
+
 /*
  * Calculate the HMAC SHA256 of data read using a BIO and read_cb, and verify
  * the result matches the expected value.
  * Return 1 if verified, or 0 if it fails.
  */
+
+#ifndef __USE_GNU
+#define __USE_GNU
+#include <dlfcn.h>
+#undef __USE_GNU
+#else
+#include <dlfcn.h>
+#endif
+#include <link.h>
+
+static int verify_integrity_rodata(OSSL_CORE_BIO *bio,
+                                   OSSL_FUNC_BIO_read_ex_fn read_ex_cb,
+                                   OSSL_LIB_CTX *libctx, OSSL_SELF_TEST *ev,
+                                   const char *event_type)
+{
+    int ret = 0, status;
+    unsigned char out[MAX_MD_SIZE];
+    unsigned char buf[INTEGRITY_BUF_SIZE];
+    unsigned char expected[HMAC_LEN];
+    size_t bytes_read = 0, out_len = 0;
+    EVP_MAC *mac = NULL;
+    EVP_MAC_CTX *ctx = NULL;
+    OSSL_PARAM params[2], *p = params;
+    Dl_info info;
+    void *extra_info = NULL;
+    struct link_map *lm = NULL;
+    unsigned long paddr;
+    unsigned long off = 0;
+
+    if (!SELF_TEST_kats_execute(ev, libctx, ST_ID_MAC_HMAC, 0))
+        goto err;
+
+    OSSL_SELF_TEST_onbegin(ev, event_type, OSSL_SELF_TEST_DESC_INTEGRITY_HMAC);
+
+    if (!dladdr1 ((const void *)fips_hmac_container,
+                &info, &extra_info, RTLD_DL_LINKMAP))
+        goto err;
+    lm = extra_info;
+    paddr = (unsigned long)fips_hmac_container - lm->l_addr;
+
+    mac = EVP_MAC_fetch(libctx, MAC_NAME, NULL);
+    if (mac == NULL)
+        goto err;
+    ctx = EVP_MAC_CTX_new(mac);
+    if (ctx == NULL)
+        goto err;
+
+    *p++ = OSSL_PARAM_construct_utf8_string("digest", DIGEST_NAME, 0);
+    *p = OSSL_PARAM_construct_end();
+
+    if (!EVP_MAC_init(ctx, fixed_key, sizeof(fixed_key), params))
+        goto err;
+
+    while ((off + INTEGRITY_BUF_SIZE) <= paddr) {
+        status = read_ex_cb(bio, buf, sizeof(buf), &bytes_read);
+        if (status != 1)
+            break;
+        if (!EVP_MAC_update(ctx, buf, bytes_read))
+            goto err;
+	off += bytes_read;
+    }
+
+    if (off < paddr) {
+        int delta = paddr - off;
+        status = read_ex_cb(bio, buf, delta, &bytes_read);
+        if (status != 1)
+            goto err;
+        if (!EVP_MAC_update(ctx, buf, bytes_read))
+            goto err;
+	off += bytes_read;
+    }
+
+    /* read away the buffer */
+    status = read_ex_cb(bio, expected, HMAC_LEN, &bytes_read);
+    if (status != 1)
+        goto err;
+
+    /* replace in-file HMAC buffer with the original zeros */
+    memset(buf, 0, HMAC_LEN);
+
+    /* check that the retrieved HMAC is not all zeros and contains an actual
+     * HMAC no point in continuing otherwise */
+    if (memcmp(expected, buf, HMAC_LEN) == 0)
+        goto err;
+
+    if (!EVP_MAC_update(ctx, buf, HMAC_LEN))
+        goto err;
+    off += HMAC_LEN;
+
+    while (bytes_read > 0) {
+        status = read_ex_cb(bio, buf, sizeof(buf), &bytes_read);
+        if (status != 1)
+            break;
+        if (!EVP_MAC_update(ctx, buf, bytes_read))
+            goto err;
+	off += bytes_read;
+    }
+
+    if (!EVP_MAC_final(ctx, out, &out_len, sizeof(out)))
+        goto err;
+
+    OSSL_SELF_TEST_oncorrupt_byte(ev, out);
+    if (out_len != HMAC_LEN
+            || memcmp(expected, out, out_len) != 0)
+        goto err;
+    ret = 1;
+err:
+    OSSL_SELF_TEST_onend(ev, ret);
+    EVP_MAC_CTX_free(ctx);
+    EVP_MAC_free(mac);
+    OPENSSL_cleanse(out, sizeof(out));
+    return ret;
+}
+
 static int verify_integrity(OSSL_CORE_BIO *bio, OSSL_FUNC_BIO_read_ex_fn read_ex_cb,
     unsigned char *expected, size_t expected_len,
     OSSL_LIB_CTX *libctx, OSSL_SELF_TEST *ev,
@@ -325,8 +447,7 @@ int SELF_TEST_post(SELF_TEST_POST_PARAMS *st, void *fips_global,
         return 0;
     }
 
-    if (st == NULL
-        || st->module_checksum_data == NULL) {
+    if (st == NULL) {
         ERR_raise(ERR_LIB_PROV, PROV_R_MISSING_CONFIG_DATA);
         goto end;
     }
@@ -335,29 +456,41 @@ int SELF_TEST_post(SELF_TEST_POST_PARAMS *st, void *fips_global,
     if (ev == NULL)
         goto end;
 
-    module_checksum = OPENSSL_hexstr2buf(st->module_checksum_data,
-        &checksum_len);
-    if (module_checksum == NULL) {
-        ERR_raise(ERR_LIB_PROV, PROV_R_INVALID_CONFIG_DATA);
+    /* Always check the integrity of the fips module */
+    bio_module = (*st->bio_new_file_cb)(st->module_filename, "rb");
+    if (bio_module == NULL) {
+        ERR_raise(ERR_LIB_PROV, PROV_R_MODULE_INTEGRITY_FAILURE);
         goto end;
     }
-    bio_module = (*st->bio_new_file_cb)(st->module_filename, "rb");
 
     /* This section can be called on demand and that could race with deferred
      * tests being executed in another thread, so we use use helpers to get
      * proper locking around this critical section */
-
     if (SELF_TEST_lock_deferred(fips_global)) {
         int errored = 0;
-
-        /* Always check the integrity of the fips module */
-        if (bio_module == NULL
-            || !verify_integrity(bio_module, st->bio_read_ex_cb,
-                module_checksum, checksum_len, st->libctx,
-                ev, OSSL_SELF_TEST_TYPE_MODULE_INTEGRITY)) {
-            ERR_raise(ERR_LIB_PROV, PROV_R_MODULE_INTEGRITY_FAILURE);
-            errored = 1;
-            goto locked_end;
+        if (st->module_checksum_data == NULL) {
+            if (!verify_integrity_rodata(bio_module, st->bio_read_ex_cb,
+                                         st->libctx, ev,
+                                         OSSL_SELF_TEST_TYPE_MODULE_INTEGRITY)) {
+                ERR_raise(ERR_LIB_PROV, PROV_R_MODULE_INTEGRITY_FAILURE);
+                errored = 1;
+                goto locked_end;
+            }
+        } else {
+            module_checksum = OPENSSL_hexstr2buf(st->module_checksum_data,
+                    &checksum_len);
+            if (module_checksum == NULL) {
+                ERR_raise(ERR_LIB_PROV, PROV_R_INVALID_CONFIG_DATA);
+                errored = 1;
+                goto locked_end;
+            }
+            if (!verify_integrity(bio_module, st->bio_read_ex_cb,
+                                  module_checksum, checksum_len, st->libctx,
+                                  ev, OSSL_SELF_TEST_TYPE_MODULE_INTEGRITY)) {
+                ERR_raise(ERR_LIB_PROV, PROV_R_MODULE_INTEGRITY_FAILURE);
+                errored = 1;
+                goto locked_end;
+            }
         }
 
         if ((st->defer_tests != NULL)
