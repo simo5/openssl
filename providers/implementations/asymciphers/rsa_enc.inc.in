@@ -36,4 +36,5 @@ use OpenSSL::paramnames qw(produce_param_decoder produce_param_decoder_with_coun
                           ['OSSL_ASYM_CIPHER_PARAM_IMPLICIT_REJECTION',           'imrej',   'uint'],
                           ['OSSL_ASYM_CIPHER_PARAM_FIPS_KEY_CHECK',               'ind_k',   'int', 'fips'],
                           ['OSSL_ASYM_CIPHER_PARAM_FIPS_RSA_PKCS15_PAD_DISABLED', 'ind_pad', 'int', 'fips'],
+                          ['OSSL_ASYM_CIPHER_PARAM_REDHAT_KAT_OAEP_SEED',         'kat_oaep_seed', 'octet_string', 'fips'],
                          )); -}
