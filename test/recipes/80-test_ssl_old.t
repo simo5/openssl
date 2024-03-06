@@ -441,6 +441,9 @@ sub testssl {
             skip "skipping dhe1024dsa test", 1
                 if ($no_dh);
 
+            skip "FIPS 186-4 type DH groups are no longer supported by the FIPS provider", 1
+                if $provider eq "fips";
+
             ok(run(test([@ssltest, "-bio_pair", "-dhe1024dsa", "-v"])),
                'test with 1024bit DHE via BIO pair');
           }
