@@ -897,6 +897,12 @@ EC_GROUP *d2i_ECPKParameters(EC_GROUP **a, const unsigned char **in, long len)
     }
 #endif
 
+    if (EC_GROUP_check_named_curve(group, 0, NULL) == NID_undef) {
+        EC_GROUP_free(group);
+        ECPKPARAMETERS_free(params);
+        return NULL;
+    }
+
     if (a) {
         EC_GROUP_free(*a);
         *a = group;

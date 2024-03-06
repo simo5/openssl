@@ -106,7 +106,8 @@ subtest 'Check loading of fips and non-fips keys' => sub {
     plan skip_all => "FIPS is disabled"
         if $no_fips;
 
-    plan tests => 2;
+#    plan tests => 2;
+    plan tests => 1;
 
     my $fipsconf = srctop_file("test", "fips-and-base.cnf");
     $ENV{OPENSSL_CONF} = $fipsconf;
@@ -115,11 +116,12 @@ subtest 'Check loading of fips and non-fips keys' => sub {
                  '-check', '-in', srctop_file("test", "testec-p112r1.pem")])),
         "Checking non-fips curve key fails in FIPS provider");
 
-    ok(run(app(['openssl', 'pkey',
-                '-provider', 'default',
-                '-propquery', '?fips!=yes',
-                '-check', '-in', srctop_file("test", "testec-p112r1.pem")])),
-        "Checking non-fips curve key succeeds with non-fips property query");
+#    We disable these EC keys completely regradless of FIPS
+#    ok(run(app(['openssl', 'pkey',
+#                '-provider', 'default',
+#                '-propquery', '?fips!=yes',
+#                '-check', '-in', srctop_file("test", "testec-p112r1.pem")])),
+#        "Checking non-fips curve key succeeds with non-fips property query");
 
     delete $ENV{OPENSSL_CONF};
 }
