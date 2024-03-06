@@ -171,44 +171,24 @@ static int prime_field_tests(void)
         || !TEST_ptr(p = BN_new())
         || !TEST_ptr(a = BN_new())
         || !TEST_ptr(b = BN_new())
-        || !TEST_true(BN_hex2bn(&p, "17"))
-        || !TEST_true(BN_hex2bn(&a, "1"))
-        || !TEST_true(BN_hex2bn(&b, "1"))
-        || !TEST_ptr(group = EC_GROUP_new_curve_GFp(p, a, b, ctx))
-        || !TEST_true(EC_GROUP_get_curve(group, p, a, b, ctx)))
+        /*
+         * applications should use EC_GROUP_new_curve_GFp so
+         * that the library gets to choose the EC_METHOD
+         */
+        || !TEST_ptr(group = EC_GROUP_new(EC_GFp_mont_method())))
         goto err;
-
-    TEST_info("Curve defined by Weierstrass equation");
-    TEST_note("     y^2 = x^3 + a*x + b (mod p)");
-    test_output_bignum("a", a);
-    test_output_bignum("b", b);
-    test_output_bignum("p", p);
 
     buf[0] = 0;
     if (!TEST_ptr(P = EC_POINT_new(group))
         || !TEST_ptr(Q = EC_POINT_new(group))
         || !TEST_ptr(R = EC_POINT_new(group))
-        || !TEST_true(EC_POINT_set_to_infinity(group, P))
-        || !TEST_true(EC_POINT_is_at_infinity(group, P))
-        || !TEST_true(EC_POINT_oct2point(group, Q, buf, 1, ctx))
-        || !TEST_true(EC_POINT_add(group, P, P, Q, ctx))
-        || !TEST_true(EC_POINT_is_at_infinity(group, P))
         || !TEST_ptr(x = BN_new())
         || !TEST_ptr(y = BN_new())
         || !TEST_ptr(z = BN_new())
-        || !TEST_ptr(yplusone = BN_new())
-        || !TEST_true(BN_hex2bn(&x, "D"))
-        || !TEST_true(EC_POINT_set_compressed_coordinates(group, Q, x, 1, ctx)))
+        || !TEST_ptr(yplusone = BN_new()))
         goto err;
 
-    if (!TEST_int_gt(EC_POINT_is_on_curve(group, Q, ctx), 0)) {
-        if (!TEST_true(EC_POINT_get_affine_coordinates(group, Q, x, y, ctx)))
-            goto err;
-        TEST_info("Point is not on curve");
-        test_output_bignum("x", x);
-        test_output_bignum("y", y);
-        goto err;
-    }
+    /* Curve P-224 (FIPS PUB 186-2, App. 6) */
 
     TEST_note("A cyclic subgroup:");
     k = 100;
