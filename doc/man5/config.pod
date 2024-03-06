@@ -317,6 +317,13 @@ this option is set to B<no>.  Because TLS 1.1 or lower use MD5-SHA1 as
 pseudorandom function (PRF) to derive key material, disabling
 B<rh-allow-sha1-signatures> requires the use of TLS 1.2 or newer.
 
+Note that enabling B<rh-allow-sha1-signatures> will allow TLS signature
+algorithms that use SHA1 in security level 1, despite the definition of
+security level 1 of 80 bits of security, which SHA1 and MD5-SHA1 do not meet.
+This allows using SHA1 and MD5-SHA1 in TLS in the LEGACY crypto-policy on
+Fedora without requiring to set the security level to 0, which would include
+further insecure algorithms, and thus restores support for TLS 1.0 and 1.1.
+
 =item B<fips_mode> (deprecated)
 
 The value is a boolean that can be B<yes> or B<no>.  If the value is
