@@ -454,8 +454,6 @@ static double ffdh_results[FFDH_NUM][1]; /* 1 op: derivation */
 #endif /* OPENSSL_NO_DH */
 
 enum ec_curves_t {
-    R_EC_P160,
-    R_EC_P192,
     R_EC_P224,
     R_EC_P256,
     R_EC_P384,
@@ -498,8 +496,6 @@ enum ec_curves_t {
 };
 /* list of ecdsa curves */
 static const OPT_PAIR ecdsa_choices[EC_NUM] = {
-    { "ecdsap160", R_EC_P160 },
-    { "ecdsap192", R_EC_P192 },
     { "ecdsap224", R_EC_P224 },
     { "ecdsap256", R_EC_P256 },
     { "ecdsap384", R_EC_P384 },
@@ -535,8 +531,6 @@ static const OPT_PAIR ecdsa_choices[EC_NUM] = {
 };
 /* list of ecdh curves, extension of |ecdsa_choices| list above */
 static const OPT_PAIR ecdh_choices[EC_NUM] = {
-    { "ecdhp160", R_EC_P160 },
-    { "ecdhp192", R_EC_P192 },
     { "ecdhp224", R_EC_P224 },
     { "ecdhp256", R_EC_P256 },
     { "ecdhp384", R_EC_P384 },
@@ -1907,8 +1901,6 @@ int speed_main(int argc, char **argv)
 #define STRSZ(lit) (lit), (sizeof(lit))
     static const EC_CURVE ec_curves[EC_NUM] = {
         /* Prime Curves */
-        { "EC", STRSZ("secp160r1"), 0, 160 },
-        { "EC", STRSZ("prime192v1"), 0, 192 },
         { "EC", STRSZ("secp224r1"), 0, 224 },
         { "EC", STRSZ("prime256v1"), 0, 256 },
         { "EC", STRSZ("secp384r1"), 0, 384 },
