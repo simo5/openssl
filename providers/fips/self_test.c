@@ -369,11 +369,25 @@ static int verify_integrity(OSSL_CORE_BIO *bio,
     EVP_MAC *mac = NULL;
     EVP_MAC_CTX *ctx = NULL;
     OSSL_PARAM params[2], *p = params;
+    Dl_info info;
+    void *extra_info = NULL;
+    struct link_map *lm = NULL;
+    unsigned long paddr;
+    unsigned long off = 0;
+
+    if (expected_len != HMAC_LEN)
+        goto err;
 
     if (!integrity_self_test(ev, libctx))
         goto err;
 
     OSSL_SELF_TEST_onbegin(ev, event_type, OSSL_SELF_TEST_DESC_INTEGRITY_HMAC);
+
+    if (!dladdr1 ((const void *)fips_hmac_container,
+                &info, &extra_info, RTLD_DL_LINKMAP))
+        goto err;
+    lm = extra_info;
+    paddr = (unsigned long)fips_hmac_container - lm->l_addr;
 
     mac = EVP_MAC_fetch(libctx, MAC_NAME, NULL);
     if (mac == NULL)
@@ -388,13 +402,49 @@ static int verify_integrity(OSSL_CORE_BIO *bio,
     if (!EVP_MAC_init(ctx, fixed_key, sizeof(fixed_key), params))
         goto err;
 
-    while (1) {
-        status = read_ex_cb(bio, buf, sizeof(buf), &bytes_read);
+    while ((off + INTEGRITY_BUF_SIZE) <= paddr) {
+        status = read_ex_cb(bio, buf, INTEGRITY_BUF_SIZE, &bytes_read);
         if (status != 1)
             break;
         if (!EVP_MAC_update(ctx, buf, bytes_read))
             goto err;
+	off += bytes_read;
     }
+
+    if (off < paddr) {
+        int delta = paddr - off;
+        status = read_ex_cb(bio, buf, delta, &bytes_read);
+        if (status != 1)
+            goto err;
+        if (!EVP_MAC_update(ctx, buf, bytes_read))
+            goto err;
+	off += bytes_read;
+    }
+
+    /* read away the buffer */
+    status = read_ex_cb(bio, buf, HMAC_LEN, &bytes_read);
+    if (status != 1)
+        goto err;
+
+    /* check that it is the expect bytes, no point in continuing otherwise */
+   if (memcmp(expected, buf, HMAC_LEN) != 0)
+        goto err;
+
+    /* replace in-file HMAC buffer with the original zeros */
+    memset(buf, 0, HMAC_LEN);
+    if (!EVP_MAC_update(ctx, buf, HMAC_LEN))
+        goto err;
+    off += HMAC_LEN;
+
+    while (bytes_read > 0) {
+        status = read_ex_cb(bio, buf, INTEGRITY_BUF_SIZE, &bytes_read);
+        if (status != 1)
+            break;
+        if (!EVP_MAC_update(ctx, buf, bytes_read))
+            goto err;
+	off += bytes_read;
+    }
+
     if (!EVP_MAC_final(ctx, out, &out_len, sizeof(out)))
         goto err;
 
