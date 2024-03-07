@@ -29,7 +29,7 @@ print(string.sub(hash, 0, 16))
 Summary: Utilities from the general purpose cryptography library with TLS implementation
 Name: openssl
 Version: 3.2.1
-Release: 2%{?dist}
+Release: 3%{?dist}
 Epoch: 1
 Source: openssl-%{version}.tar.gz
 Source2: Makefile.certificate
@@ -375,6 +375,10 @@ install -m644 %{SOURCE9} \
 %ldconfig_scriptlets libs
 
 %changelog
+* Thu Mar 07 2024 Dmitry Belyavskiy <dbelyavs@redhat.com> - 1:3.2.1-3
+- Minimize skipping tests
+- Allow ignoring unknown signature algorithms and groups (upstream #23050)
+
 * Fri Feb 09 2024 Sahana Prasad <sahana@redhat.com> - 1:3.2.1-2
 - Fix version aliasing issue
 - https://github.com/openssl/openssl/issues/23534
