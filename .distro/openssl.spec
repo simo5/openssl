@@ -378,6 +378,7 @@ install -m644 %{SOURCE9} \
 * Thu Mar 07 2024 Dmitry Belyavskiy <dbelyavs@redhat.com> - 1:3.2.1-3
 - Minimize skipping tests
 - Allow ignoring unknown signature algorithms and groups (upstream #23050)
+- Allow specifying provider algorithms in SignatureAlgorithms (upstream #22779)
 
 * Fri Feb 09 2024 Sahana Prasad <sahana@redhat.com> - 1:3.2.1-2
 - Fix version aliasing issue
