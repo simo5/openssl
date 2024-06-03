@@ -7,6 +7,10 @@
  * https://www.openssl.org/source/license.html
  */
 
+#ifndef _GNU_SOURCE
+# define _GNU_SOURCE
+#endif
+
 #include "crypto/cryptlib.h"
 #include <openssl/conf.h>
 #include "internal/thread_once.h"
@@ -20,6 +24,7 @@
 # include <sys/types.h>
 # include <sys/stat.h>
 # include <fcntl.h>
+# include <stdlib.h>
 # include <unistd.h>
 # include <openssl/evp.h>
 
