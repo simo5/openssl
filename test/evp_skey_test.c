@@ -40,9 +40,8 @@ static int test_skey_cipher(void)
         0x53, 0x4B, 0x45, 0x59, 0x53, 0x4B, 0x45, 0x59,
         0x53, 0x4B, 0x45, 0x59, 0x53, 0x4B, 0x45, 0x59,
     };
-    const unsigned char *key_ptr = import_key;
     OSSL_PARAM params[3];
-   OSSL_PARAM *export_params = NULL;
+    OSSL_PARAM *export_params = NULL;
     const unsigned char *export;
     size_t export_len;
 
@@ -57,8 +56,8 @@ static int test_skey_cipher(void)
     /* Create EVP_SKEY */
     params[0] = OSSL_PARAM_construct_utf8_string(FAKE_CIPHER_PARAM_KEY_NAME,
                                                  "fake key name", 0);
-    params[1] = OSSL_PARAM_construct_octet_ptr(OSSL_SKEY_PARAM_RAW_BYTES,
-                                               (void **)&key_ptr, KEY_SIZE);
+    params[1] = OSSL_PARAM_construct_octet_string(OSSL_SKEY_PARAM_RAW_BYTES,
+                                                  (void *)import_key, KEY_SIZE);
     params[2] = OSSL_PARAM_construct_end();
     key = EVP_SKEY_import(libctx, "fake_cipher", FAKE_CIPHER_FETCH_PROPS,
                           OSSL_SKEYMGMT_SELECT_ALL, params);

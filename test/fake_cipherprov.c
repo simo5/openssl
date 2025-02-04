@@ -31,8 +31,6 @@ static int ctx_from_key_params(PROV_CIPHER_FAKE_CTX *pctx, const OSSL_PARAM *par
     const OSSL_PARAM *p;
     char key_name[MAX_KEYNAME];
     char *pval = key_name;
-    const void *val;
-    size_t used_len;
 
     memset(key_name, 0, MAX_KEYNAME);
 
@@ -48,15 +46,10 @@ static int ctx_from_key_params(PROV_CIPHER_FAKE_CTX *pctx, const OSSL_PARAM *par
 
     p = OSSL_PARAM_locate_const(params, OSSL_SKEY_PARAM_RAW_BYTES);
     if (p != NULL) {
-        if (!OSSL_PARAM_get_octet_ptr(p, &val, &used_len)) {
-            ERR_raise(ERR_LIB_PROV, PROV_R_FAILED_TO_SET_PARAMETER);
-            return 0;
-        }
-
-        if (used_len > FAKE_KEY_LEN)
-            used_len = FAKE_KEY_LEN;
-
-        memcpy(pctx->key, val, used_len);
+        size_t data_size = p->data_size;
+        if (data_size > FAKE_KEY_LEN)
+            data_size = FAKE_KEY_LEN;
+        memcpy(pctx->key, p->data, data_size);
     }
 
     return 1;
@@ -85,34 +78,26 @@ static void *fake_skeymgmt_import(void *provctx, int selection, const OSSL_PARAM
 static int fake_skeymgmt_export(void *keydata, int selection,
                                 OSSL_CALLBACK *param_callback, void *cbarg)
 {
-    OSSL_PARAM *params = NULL;
+    OSSL_PARAM params[3];
     PROV_CIPHER_FAKE_CTX *ctx = (PROV_CIPHER_FAKE_CTX *)keydata;
-    int ret = 0;
-    OSSL_PARAM_BLD *tmpl = NULL;
+    OSSL_PARAM *p = params;
 
-    tmpl = OSSL_PARAM_BLD_new();
-    if (tmpl == NULL)
-        return 0;
+    if (selection & OSSL_SKEYMGMT_SELECT_PARAMETERS) {
+        *p = OSSL_PARAM_construct_utf8_string(FAKE_CIPHER_PARAM_KEY_NAME,
+                                              ctx->key_name,
+                                              strlen(ctx->key_name));
+        p++;
+    }
 
-    if (selection & OSSL_SKEYMGMT_SELECT_PARAMETERS
-        && OSSL_PARAM_BLD_push_utf8_string(tmpl, FAKE_CIPHER_PARAM_KEY_NAME,
-                                           ctx->key_name, strlen(ctx->key_name)) == 0)
-        goto end;
+    if (selection & OSSL_SKEYMGMT_SELECT_SECRET_KEY) {
+        *p = OSSL_PARAM_construct_octet_string(OSSL_SKEY_PARAM_RAW_BYTES,
+                                               ctx->key,
+                                               sizeof(ctx->key));
+        p++;
+    }
+    *p = OSSL_PARAM_construct_end();
 
-    if (selection & OSSL_SKEYMGMT_SELECT_SECRET_KEY
-        && OSSL_PARAM_BLD_push_octet_ptr(tmpl, OSSL_SKEY_PARAM_RAW_BYTES,
-                                         &(ctx->key), FAKE_KEY_LEN) == 0)
-        goto end;
-
-    if ((params = OSSL_PARAM_BLD_to_param(tmpl)) == NULL)
-        goto end;
-
-    ret = param_callback(params, cbarg);
-
- end:
-    OSSL_PARAM_free(params);
-    OSSL_PARAM_BLD_free(tmpl);
-    return ret;
+    return param_callback(params, cbarg);
 }
 
 static const OSSL_DISPATCH fake_skeymgmt_funcs[] = {
