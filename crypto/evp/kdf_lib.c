@@ -145,71 +145,63 @@ int EVP_KDF_derive(EVP_KDF_CTX *ctx, unsigned char *key, size_t keylen,
     return ctx->meth->derive(ctx->algctx, key, keylen, params);
 }
 
+struct convert_key {
+    const char *name;
+    OSSL_PARAM *param;
+};
+
 static int convert_key_cb(const OSSL_PARAM params[], void *arg)
 {
-    OSSL_PARAM_BLD *tmpl = arg;
+    struct convert_key *ckey = arg;
     const OSSL_PARAM *raw_bytes;
-    unsigned char *key_data;
-    size_t key_length;
+    unsigned char *data;
+    size_t len;
 
     raw_bytes = OSSL_PARAM_locate_const(params, OSSL_SKEY_PARAM_RAW_BYTES);
     if (raw_bytes == NULL)
         return 0;
 
-    if (!OSSL_PARAM_get_octet_ptr(raw_bytes, (const void **)&key_data,
-                                  &key_length))
+    if (!OSSL_PARAM_get_octet_string_ptr(raw_bytes, (const void **)&data, &len))
         return 0;
 
-    /*
-     * FIXME: Some kdfs of course decided to use a different name
-     * (OSSL_KDF_PARAM_SECRET) instead of OSSL_KDF_PARAM_KEY so we may need
-     * to have a fallback, or use get_settable params to find the correct
-     * name.
-     */
-    return ossl_param_build_set_octet_string(tmpl, NULL, OSSL_KDF_PARAM_KEY,
-                                             key_data, key_length);
+    *ckey->param = OSSL_PARAM_construct_octet_string(ckey->name, data, len);
+    return 1;
 }
 
 int EVP_KDF_CTX_set_SKEY(EVP_KDF_CTX *ctx, EVP_SKEY *key, const char *paramname)
 {
+    struct convert_key ckey;
+
     if (ctx == NULL)
         return 0;
+
+    ckey.name = (paramname != NULL) ? paramname : OSSL_KDF_PARAM_KEY;
 
     if (ctx->meth->set_skey != NULL) {
         if (ctx->meth->prov != key->skeymgmt->prov) {
             /* TODO: export/import dance */
             return 0;
         }
-        return ctx->meth->set_skey(ctx->algctx, key->keydata);
+        return ctx->meth->set_skey(ctx->algctx, key->keydata, ckey.name);
     } else {
         /*
          * Provider does not support opaque keys, try to export and
          * set params.
          */
-        OSSL_PARAM_BLD *tmpl = NULL;
-        OSSL_PARAM *params = NULL;
-        int ret = 0;
+        OSSL_PARAM params[2] = {
+            OSSL_PARAM_END,
+            OSSL_PARAM_END,
+        };
+        ckey.param = &params[0];
 
         if (!ctx->meth->set_ctx_params)
             return 0;
 
-        tmpl = OSSL_PARAM_BLD_new();
-        if (tmpl == NULL)
-            return 0;
-
         if (EVP_SKEY_export(key, OSSL_SKEYMGMT_SELECT_SECRET_KEY,
-                            convert_key_cb, tmpl)) {
-            params = OSSL_PARAM_BLD_to_param(tmpl);
-            if (params == NULL)
-                goto end;
+                            convert_key_cb, &ckey))
+            return ctx->meth->set_ctx_params(ctx->algctx, params);
 
-            ret = ctx->meth->set_ctx_params(ctx->algctx, params);
-        }
-
-    end:
-        OSSL_PARAM_free(params);
-        OSSL_PARAM_BLD_free(tmpl);
-        return ret;
+        return 0;
     }
 }
 
