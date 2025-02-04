@@ -128,7 +128,7 @@ static int get_secret_key(const OSSL_PARAM params[], void *arg)
     struct raw_key_details_st *raw_key = arg;
 
     if ((p = OSSL_PARAM_locate_const(params, OSSL_SKEY_PARAM_RAW_BYTES)) != NULL)
-        return OSSL_PARAM_get_octet_ptr(p, raw_key->key, raw_key->len);
+        return OSSL_PARAM_get_octet_string_ptr(p, raw_key->key, raw_key->len);
 
     return 0;
 }
@@ -157,8 +157,8 @@ EVP_SKEY *EVP_SKEY_import_raw_key(OSSL_LIB_CTX *libctx, const char *skeymgmtname
 {
     OSSL_PARAM params[2];
 
-    params[0] = OSSL_PARAM_construct_octet_ptr(OSSL_SKEY_PARAM_RAW_BYTES,
-                                               (void **)&key, keylen);
+    params[0] = OSSL_PARAM_construct_octet_string(OSSL_SKEY_PARAM_RAW_BYTES,
+                                                  (void *)key, keylen);
     params[1] = OSSL_PARAM_construct_end();
 
     return EVP_SKEY_import(libctx, skeymgmtname, propquery,
