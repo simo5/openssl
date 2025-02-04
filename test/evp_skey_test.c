@@ -189,8 +189,6 @@ static int test_des_raw_skey(void)
     EVP_CIPHER *des_cbc = NULL;
     EVP_CIPHER_CTX *ctx = NULL;
     EVP_SKEY *skey = NULL;
-    OSSL_PARAM_BLD *tmpl = NULL;
-    OSSL_PARAM *params = NULL;
     int ret = 0;
 
     deflprov = OSSL_PROVIDER_load(libctx, "default");
@@ -208,18 +206,12 @@ static int test_des_raw_skey(void)
         goto end;
 
     /* Create EVP_SKEY */
-    if ((tmpl = OSSL_PARAM_BLD_new()) == NULL
-        || !OSSL_PARAM_BLD_push_octet_ptr(tmpl, OSSL_SKEY_PARAM_RAW_BYTES,
-                                          &des_key, DES_KEY_SIZE)
-        || (params = OSSL_PARAM_BLD_to_param(tmpl)) == NULL)
-        goto end;
-
-    skey = EVP_SKEY_import(libctx, "GENERIC-SECRET", NULL, OSSL_SKEYMGMT_SELECT_ALL, params);
+    skey = EVP_SKEY_import_raw_key(libctx, "GENERIC-SECRET", des_key,
+                                   sizeof(des_key), NULL);
     if (!TEST_ptr(skey))
         goto end;
 
     if (!TEST_int_gt(EVP_SKEY_get_raw_key(skey, &export_key, &export_length), 0)
-        || !TEST_int_eq(export_length, DES_KEY_SIZE)
         || !TEST_mem_eq(des_key, DES_KEY_SIZE, export_key, export_length))
         goto end;
 
@@ -245,8 +237,6 @@ static int test_des_raw_skey(void)
 
     ret = 1;
 end:
-    OSSL_PARAM_free(params);
-    OSSL_PARAM_BLD_free(tmpl);
     EVP_SKEY_free(skey);
     EVP_CIPHER_free(des_cbc);
     EVP_CIPHER_CTX_free(ctx);

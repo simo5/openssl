@@ -41,8 +41,6 @@ static void *generic_import(void *provctx, int selection,
 {
     OSSL_LIB_CTX *libctx = PROV_LIBCTX_OF(provctx);
     const OSSL_PARAM *raw_bytes;
-    const void *val;
-    size_t used_len;
     SKEY *generic;
     int ok = 0;
 
@@ -61,13 +59,11 @@ static void *generic_import(void *provctx, int selection,
 
     generic->type = SKEY_TYPE_GENERIC;
 
-    if (!OSSL_PARAM_get_octet_ptr(raw_bytes, &val, &used_len))
+    if ((generic->data = OPENSSL_memdup(raw_bytes->data, raw_bytes->data_size)) == NULL) {
+        ok = 0;
         goto end;
-
-    if ((generic->data = OPENSSL_memdup(val, used_len)) == NULL)
-        goto end;
-
-    generic->length = used_len;
+    }
+    generic->length = raw_bytes->data_size;
     ok = 1;
 
 end:
@@ -81,40 +77,23 @@ end:
 static int generic_export(void *keydata, int selection,
                           OSSL_CALLBACK *param_callback, void *cbarg)
 {
-    SKEY *generic = keydata;
-    OSSL_PARAM_BLD *tmpl;
-    OSSL_PARAM *params = NULL;
-    int ok = 1;
+    SKEY *gen = keydata;
+    OSSL_PARAM params[2];
 
-    if (!ossl_prov_is_running() || generic == NULL)
+    if (!ossl_prov_is_running() || gen == NULL)
         return 0;
 
-    if (generic->type != SKEY_TYPE_GENERIC)
+    if (gen->type != SKEY_TYPE_GENERIC)
         return 0;
 
     if ((selection & OSSL_SKEYMGMT_SELECT_SECRET_KEY) == 0)
         return 0;
 
-    tmpl = OSSL_PARAM_BLD_new();
-    if (tmpl == NULL)
-        return 0;
+    params[0] = OSSL_PARAM_construct_octet_string(OSSL_SKEY_PARAM_RAW_BYTES,
+                                                  gen->data, gen->length);
+    params[1] = OSSL_PARAM_construct_end();
 
-    if (!OSSL_PARAM_BLD_push_octet_ptr(tmpl, OSSL_SKEY_PARAM_RAW_BYTES,
-                                       generic->data, generic->length)) {
-        ok = 0;
-        goto err;
-    }
-
-    if (!ok || (params = OSSL_PARAM_BLD_to_param(tmpl)) == NULL) {
-        ok = 0;
-        goto err;
-    }
-
-    ok = param_callback(params, cbarg);
-    OSSL_PARAM_free(params);
-err:
-    OSSL_PARAM_BLD_free(tmpl);
-    return ok;
+    return param_callback(params, cbarg);
 }
 
 const OSSL_DISPATCH ossl_generic_skeymgmt_functions[] = {
