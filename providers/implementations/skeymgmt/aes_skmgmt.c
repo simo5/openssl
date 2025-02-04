@@ -40,8 +40,6 @@ static void *aes_import(void *provctx, int selection,
 {
     OSSL_LIB_CTX *libctx = PROV_LIBCTX_OF(provctx);
     const OSSL_PARAM *raw_bytes;
-    const void *val;
-    size_t used_len;
     SKEY *aes;
     int ok = 1;
 
@@ -60,15 +58,11 @@ static void *aes_import(void *provctx, int selection,
 
     aes->type = SKEY_TYPE_AES;
 
-    if (!OSSL_PARAM_get_octet_ptr(raw_bytes, &val, &used_len)) {
+    if ((aes->data = OPENSSL_memdup(raw_bytes->data, raw_bytes->data_size)) == NULL) {
         ok = 0;
         goto end;
     }
-    if ((aes->data = OPENSSL_memdup(val, used_len)) == NULL) {
-        ok = 0;
-        goto end;
-    }
-    aes->length = used_len;
+    aes->length = raw_bytes->data_size;
 
     if (aes->length != 16 && aes->length != 24 && aes->length != 32) {
         ok = 0;
@@ -87,9 +81,7 @@ static int aes_export(void *keydata, int selection,
                       OSSL_CALLBACK *param_callback, void *cbarg)
 {
     SKEY *aes = keydata;
-    OSSL_PARAM_BLD *tmpl;
-    OSSL_PARAM *params = NULL;
-    int ok = 1;
+    OSSL_PARAM params[2];
 
     if (!ossl_prov_is_running() || aes == NULL)
         return 0;
@@ -100,26 +92,11 @@ static int aes_export(void *keydata, int selection,
     if ((selection & OSSL_SKEYMGMT_SELECT_SECRET_KEY) == 0)
         return 0;
 
-    tmpl = OSSL_PARAM_BLD_new();
-    if (tmpl == NULL)
-        return 0;
+    params[0] = OSSL_PARAM_construct_octet_string(OSSL_SKEY_PARAM_RAW_BYTES,
+                                                  aes->data, aes->length);
+    params[1] = OSSL_PARAM_construct_end();
 
-    if (!OSSL_PARAM_BLD_push_octet_ptr(tmpl, OSSL_SKEY_PARAM_RAW_BYTES,
-                                       aes->data, aes->length)) {
-        ok = 0;
-        goto err;
-    }
-
-    if (!ok || (params = OSSL_PARAM_BLD_to_param(tmpl)) == NULL) {
-        ok = 0;
-        goto err;
-    }
-
-    ok = param_callback(params, cbarg);
-    OSSL_PARAM_free(params);
-err:
-    OSSL_PARAM_BLD_free(tmpl);
-    return ok;
+    return param_callback(params, cbarg);
 }
 
 const OSSL_DISPATCH ossl_aes_skeymgmt_functions[] = {
