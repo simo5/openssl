@@ -200,13 +200,25 @@ static int fips_get_params(void *provctx, OSSL_PARAM params[])
                                               OSSL_LIB_CTX_FIPS_PROV_INDEX);
 
     p = OSSL_PARAM_locate(params, OSSL_PROV_PARAM_NAME);
+#ifdef KRYOPTIC_FIPS_VENDOR
+    if (p != NULL && !OSSL_PARAM_set_utf8_ptr(p, KRYOPTIC_FIPS_VENDOR))
+#else
     if (p != NULL && !OSSL_PARAM_set_utf8_ptr(p, FIPS_VENDOR))
+#endif
         return 0;
     p = OSSL_PARAM_locate(params, OSSL_PROV_PARAM_VERSION);
+#ifdef KRYOPTIC_FIPS_VERSION
+    if (p != NULL && !OSSL_PARAM_set_utf8_ptr(p, KRYOPTIC_FIPS_VERSION))
+#else
     if (p != NULL && !OSSL_PARAM_set_utf8_ptr(p, OPENSSL_VERSION_STR))
+#endif
         return 0;
     p = OSSL_PARAM_locate(params, OSSL_PROV_PARAM_BUILDINFO);
+#ifdef KRYOPTIC_FIPS_BUILD
+    if (p != NULL && !OSSL_PARAM_set_utf8_ptr(p, KRYOPTIC_FIPS_BUILD))
+#else
     if (p != NULL && !OSSL_PARAM_set_utf8_ptr(p, OPENSSL_FULL_VERSION_STR))
+#endif
         return 0;
     p = OSSL_PARAM_locate(params, OSSL_PROV_PARAM_STATUS);
     if (p != NULL && !OSSL_PARAM_set_int(p, ossl_prov_is_running()))
