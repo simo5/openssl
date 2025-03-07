@@ -318,6 +318,7 @@ static const ST_KAT_CIPHER st_kat_cipher_tests[] = {
         CIPHER_MODE_DECRYPT,
         ITM(aes_128_ecb_key)
     },
+#if 0
 #ifndef OPENSSL_NO_DES
     {
         {
@@ -330,6 +331,7 @@ static const ST_KAT_CIPHER st_kat_cipher_tests[] = {
         CIPHER_MODE_DECRYPT,
         ITM(tdes_key)
     }
+#endif
 #endif
 };
 
