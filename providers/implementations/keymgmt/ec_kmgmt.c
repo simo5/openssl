@@ -1383,7 +1383,6 @@ static void ec_gen_cleanup(void *genctx)
 
     if (gctx == NULL)
         return;
-
     OPENSSL_clear_free(gctx->dhkem_ikm, gctx->dhkem_ikmlen);
     EC_GROUP_free(gctx->gen_group);
     BN_free(gctx->p);
