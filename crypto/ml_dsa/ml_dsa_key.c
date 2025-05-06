@@ -143,6 +143,14 @@ void ossl_ml_dsa_key_free(ML_DSA_KEY *key)
  */
 void ossl_ml_dsa_key_reset(ML_DSA_KEY *key)
 {
+    /* zeroize PSPs */
+    OPENSSL_cleanse(key->rho, ML_DSA_RHO_BYTES);
+    OPENSSL_cleanse(key->tr, ML_DSA_TR_BYTES);
+    if (key->pub_encoding != NULL) {
+        OPENSSL_cleanse(key->pub_encoding, key->params->pk_len);
+    }
+    vector_zero(&key->t1);
+
     /*
      * The allocation for |s1.poly| subsumes those for |s2| and |t0|, which we
      * must not access after |s1|'s poly is freed.

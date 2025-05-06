@@ -1573,6 +1573,10 @@ ossl_ml_kem_key_reset(ML_KEM_KEY *key)
 {
     if (key->t == NULL)
         return;
+
+    /* zeroize PSPs */
+    OPENSSL_cleanse(key->t, key->vinfo->puballoc);
+
     /*-
      * Cleanse any sensitive data:
      * - The private vector |s| is immediately followed by the FO failure
