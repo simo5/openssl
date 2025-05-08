@@ -1714,12 +1714,11 @@ void ossl_ml_kem_key_free(ML_KEM_KEY *key)
     EVP_MD_free(key->sha3_256_md);
     EVP_MD_free(key->sha3_512_md);
 
-    if (ossl_ml_kem_decoded_key(key)) {
-        OPENSSL_cleanse(key->seedbuf, sizeof(key->seedbuf));
-        if (ossl_ml_kem_have_dkenc(key)) {
-            OPENSSL_cleanse(key->encoded_dk, key->vinfo->prvkey_bytes);
-            OPENSSL_free(key->encoded_dk);
-        }
+    /* Alwyas cleanse seedbuf (PSP) */
+    OPENSSL_cleanse(key->seedbuf, sizeof(key->seedbuf));
+    if (ossl_ml_kem_have_dkenc(key)) {
+        OPENSSL_cleanse(key->encoded_dk, key->vinfo->prvkey_bytes);
+        OPENSSL_free(key->encoded_dk);
     }
     ossl_ml_kem_key_reset(key);
     OPENSSL_free(key);
