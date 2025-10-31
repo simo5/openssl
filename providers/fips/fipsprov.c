@@ -1336,6 +1336,8 @@ static int FIPS_kat_deferred(OSSL_LIB_CTX *libctx, FIPS_DEFERRED_TEST *test)
         /* execute test */
         if (SELF_TEST_kats_single(ev, libctx, test->category, test->algorithm))
             ret = FIPS_DEFERRED_TEST_PASSED;
+        else
+            ossl_set_error_state(OSSL_SELF_TEST_TYPE_NONE);
 
     done:
         /* Mark test as pass or fail */
