@@ -24,6 +24,7 @@
 #include "internal/packet.h"
 #include "internal/sizes.h"
 #include "internal/fips.h"
+#include "prov/securitycheck.h"
 
 #define ml_dsa_set_ctx_params_st ml_dsa_verifymsg_set_ctx_params_st
 #define ml_dsa_set_ctx_params_decoder ml_dsa_verifymsg_set_ctx_params_decoder
@@ -70,6 +71,8 @@ typedef struct {
     EVP_MD_CTX *md_ctx; /* Ctx for msg_init/update/final interface */
     unsigned char *sig; /* Signature, for verification */
     size_t siglen;
+
+    OSSL_FIPS_IND_DECLARE
 } PROV_ML_DSA_CTX;
 
 static void ml_dsa_freectx(void *vctx)
@@ -398,6 +401,16 @@ static int ml_dsa_set_ctx_params(void *vctx, const OSSL_PARAM params[])
         }
     }
 
+#ifdef FIPS_MODULE
+    if (!ossl_fips_self_testing()
+        && !ossl_self_test_in_progress(ST_ID_SIG_ML_DSA_65)
+        && p.ent != NULL) {
+        if (!OSSL_FIPS_IND_ON_UNAPPROVED(pctx, OSSL_FIPS_IND_SETTABLE0,
+            pctx->libctx, "ML-DSA", "Siggen",
+            ossl_fips_config_rh_test_facilities_check))
+            return 0;
+    }
+#endif
     if (p.ent != NULL) {
         void *vp = pctx->test_entropy;
 

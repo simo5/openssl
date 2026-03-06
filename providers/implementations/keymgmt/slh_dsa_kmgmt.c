@@ -20,6 +20,7 @@
 #include "prov/providercommon.h"
 #include "prov/provider_ctx.h"
 #include "providers/implementations/keymgmt/slh_dsa_kmgmt.inc"
+#include "prov/securitycheck.h"
 
 #ifdef FIPS_MODULE
 static int slh_dsa_fips140_pairwise_test(const SLH_DSA_KEY *key,
@@ -63,6 +64,7 @@ struct slh_dsa_gen_ctx {
     char *propq;
     uint8_t entropy[SLH_DSA_MAX_N * 3];
     size_t entropy_len;
+    OSSL_FIPS_IND_DECLARE
 };
 
 static void *slh_dsa_new_key(void *provctx, const char *alg)
@@ -391,6 +393,16 @@ static int slh_dsa_gen_set_params(void *genctx, const OSSL_PARAM params[])
     if (gctx == NULL || !slh_dsa_gen_set_params_decoder(params, &p))
         return 0;
 
+#ifdef FIPS_MODULE
+    if (!ossl_fips_self_testing()
+        && !ossl_self_test_in_progress(ST_ID_ASYM_KEYGEN_SLH_DSA)
+        && p.seed != NULL) {
+        if (!OSSL_FIPS_IND_ON_UNAPPROVED(gctx, OSSL_FIPS_IND_SETTABLE0,
+            gctx->libctx, "SLH-DSA", "Keygen",
+            ossl_fips_config_rh_test_facilities_check))
+            return 0;
+    }
+#endif
     if (p.seed != NULL) {
         void *vp = gctx->entropy;
         size_t len = sizeof(gctx->entropy);

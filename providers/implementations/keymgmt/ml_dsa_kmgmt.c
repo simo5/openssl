@@ -21,6 +21,7 @@
 #include "prov/provider_ctx.h"
 #include "prov/ml_dsa.h"
 #include "providers/implementations/keymgmt/ml_dsa_kmgmt.inc"
+#include "prov/securitycheck.h"
 
 static OSSL_FUNC_keymgmt_free_fn ml_dsa_free_key;
 static OSSL_FUNC_keymgmt_has_fn ml_dsa_has;
@@ -45,6 +46,7 @@ struct ml_dsa_gen_ctx {
     char *propq;
     uint8_t entropy[32];
     size_t entropy_len;
+    OSSL_FIPS_IND_DECLARE
 };
 
 #ifdef FIPS_MODULE
@@ -508,6 +510,17 @@ static int ml_dsa_gen_set_params(void *genctx, const OSSL_PARAM params[])
     if (gctx == NULL || !ml_dsa_gen_set_params_decoder(params, &p))
         return 0;
 
+#ifdef FIPS_MODULE
+    if (!ossl_fips_self_testing()
+        && !ossl_self_test_in_progress(ST_ID_ASYM_KEYGEN_ML_DSA)
+        && p.seed != NULL) {
+        OSSL_LIB_CTX *libctx = PROV_LIBCTX_OF(gctx->provctx);
+        if (!OSSL_FIPS_IND_ON_UNAPPROVED(gctx, OSSL_FIPS_IND_SETTABLE0,
+            libctx, "ML-DSA", "Keygen",
+            ossl_fips_config_rh_test_facilities_check))
+            return 0;
+    }
+#endif
     if (p.seed != NULL) {
         void *vp = gctx->entropy;
         size_t len = sizeof(gctx->entropy);
