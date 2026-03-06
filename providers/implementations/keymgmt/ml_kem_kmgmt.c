@@ -67,6 +67,7 @@ typedef struct ml_kem_gen_ctx_st {
     int evp_type;
     uint8_t seedbuf[ML_KEM_SEED_BYTES];
     uint8_t *seed;
+    OSSL_FIPS_IND_DECLARE
 } PROV_ML_KEM_GEN_CTX;
 
 static int ml_kem_pairwise_test(const ML_KEM_KEY *key, int key_flags)
@@ -700,6 +701,17 @@ static int ml_kem_gen_set_params(void *vgctx, const OSSL_PARAM params[])
             return 0;
     }
 
+#ifdef FIPS_MODULE
+    if (!ossl_fips_self_testing()
+        && !ossl_self_test_in_progress(ST_ID_ASYM_KEYGEN_ML_KEM)
+        && p.seed != NULL) {
+        OSSL_LIB_CTX *libctx = PROV_LIBCTX_OF(gctx->provctx);
+        if (!OSSL_FIPS_IND_ON_UNAPPROVED(gctx, OSSL_FIPS_IND_SETTABLE0,
+            libctx, "ML-KEM", "Keygen",
+            ossl_fips_config_rh_test_facilities_check))
+            return 0;
+    }
+#endif
     if (p.seed != NULL) {
         size_t len = ML_KEM_SEED_BYTES;
 
