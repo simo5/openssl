@@ -38,6 +38,10 @@ typedef struct {
     uint8_t entropy_buf[ML_KEM_RANDOM_BYTES];
     uint8_t *entropy;
     int op;
+#ifdef FIPS_MODULE
+    OSSL_LIB_CTX *libctx;
+#endif
+    OSSL_FIPS_IND_DECLARE
 } PROV_ML_KEM_CTX;
 
 static void *ml_kem_newctx(void *provctx)
@@ -48,8 +52,8 @@ static void *ml_kem_newctx(void *provctx)
         return NULL;
 
 #ifdef FIPS_MODULE
-    if (!ossl_deferred_self_test(PROV_LIBCTX_OF(provctx),
-            ST_ID_KEM_ML_KEM))
+    ctx->libctx = PROV_LIBCTX_OF(provctx);
+    if (!ossl_deferred_self_test(ctx->libctx, ST_ID_KEM_ML_KEM))
         return NULL;
 #endif
 
@@ -116,6 +120,16 @@ static int ml_kem_set_ctx_params(void *vctx, const OSSL_PARAM params[])
     if (ctx == NULL || !ml_kem_set_ctx_params_decoder(params, &p))
         return 0;
 
+#ifdef FIPS_MODULE
+    if (!ossl_fips_self_testing()
+        && !ossl_self_test_in_progress(ST_ID_KEM_ML_KEM)
+        && p.ikme != NULL) {
+        if (!OSSL_FIPS_IND_ON_UNAPPROVED(ctx, OSSL_FIPS_IND_SETTABLE0,
+            ctx->libctx, "ML-KEM", "Kem",
+            ossl_fips_config_rh_test_facilities_check))
+            return 0;
+    }
+#endif
     /* Encapsulation ephemeral input key material "ikmE" */
     if (ctx->op == EVP_PKEY_OP_ENCAPSULATE && p.ikme != NULL) {
         size_t len = ML_KEM_RANDOM_BYTES;
