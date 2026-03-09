@@ -1529,6 +1529,10 @@ static int decap(uint8_t secret[ML_KEM_SHARED_SECRET_BYTES],
         secret[i] = constant_time_select_8(mask, Kr[i], failure_key[i]);
 end:
     OPENSSL_cleanse(buf, DECAP_BUFFER_SZ);
+#ifdef FIPS_MODULE
+    /* pedantic zeroization required */
+    OPENSSL_cleanse(&mask, sizeof(mask));
+#endif
     return 1;
 }
 
