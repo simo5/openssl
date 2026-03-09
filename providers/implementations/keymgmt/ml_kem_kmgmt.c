@@ -385,6 +385,18 @@ static int check_prvenc(const uint8_t *prvenc, ML_KEM_KEY *key)
     return 0;
 }
 
+#ifdef FIPS_MODULE
+/* FIPS 203 7.3.3 (Hash check)
+ * Assumes key->pkhash has been pre-calculated by parse_pubkey */
+static int check_privenc_hash(const uint8_t *prvenc, ML_KEM_KEY *key)
+{
+    /* point to the H(ek) offset in dk = DKpke||ek||H(ek)||z */
+    size_t hashoff = key->vinfo->prvkey_bytes - ML_KEM_RANDOM_BYTES - ML_KEM_PKHASH_BYTES;
+
+    return (memcmp(key->pkhash, (unsigned char *)prvenc +hashoff, ML_KEM_PKHASH_BYTES) == 0);
+}
+#endif
+
 static int ml_kem_key_fromdata(ML_KEM_KEY *key,
     const OSSL_PARAM params[],
     int include_private)
@@ -467,7 +479,19 @@ static int ml_kem_key_fromdata(ML_KEM_KEY *key,
     } else if (prvlen != 0) {
         return ossl_ml_kem_parse_private_key(prvenc, prvlen, key);
     }
+#ifdef FIPS_MODULE
+    {
+        uint8_t encoded[publen];
+        if (!ossl_ml_kem_parse_public_key(pubenc, publen, key))
+            return 0;
+        if (prvlen != 0 && !check_privenc_hash(prvenc, key))
+            return 0;
+        return ossl_ml_kem_encode_public_key(encoded, publen, key)
+            && (memcmp(pubenc, encoded, publen) == 0);
+    }
+#else
     return ossl_ml_kem_parse_public_key(pubenc, publen, key);
+#endif
 }
 
 static int ml_kem_import(void *vkey, int selection, const OSSL_PARAM params[])
@@ -682,7 +706,16 @@ static int ml_kem_set_params(void *vkey, const OSSL_PARAM params[])
         return 0;
     }
 
+#ifdef FIPS_MODULE
+    {
+        uint8_t encoded[publen];
+        return ossl_ml_kem_parse_public_key(pubenc, publen, key)
+            && ossl_ml_kem_encode_public_key(encoded, publen, key)
+            && (memcmp(pubenc, encoded, publen) == 0);
+    }
+#else
     return ossl_ml_kem_parse_public_key(pubenc, publen, key);
+#endif
 }
 
 static int ml_kem_gen_set_params(void *vgctx, const OSSL_PARAM params[])
