@@ -78,7 +78,8 @@ typedef enum OPTION_choice {
     OPT_ECDH_COFACTOR_CHECK,
     OPT_SELF_TEST_ONLOAD,
     OPT_SELF_TEST_ONINSTALL,
-    OPT_DEFER_TESTS
+    OPT_DEFER_TESTS,
+    OPT_RH_TEST_FACILITIES
 } OPTION_CHOICE;
 
 const OPTIONS fipsinstall_options[] = {
@@ -152,6 +153,8 @@ const OPTIONS fipsinstall_options[] = {
     { "ecdh_cofactor_check", OPT_ECDH_COFACTOR_CHECK, '-',
         "Enable Cofactor check for ECDH" },
     { "defer_tests", OPT_DEFER_TESTS, '-', "Enables test deferral" },
+    { "rh_test_facilities", OPT_RH_TEST_FACILITIES, '-',
+      "Allows to set data that can only be set in tests but not in production" },
     OPT_SECTION("Input"),
     { "in", OPT_IN, '<', "Input config file, used when verifying" },
 
@@ -200,6 +203,7 @@ typedef struct {
     unsigned int pbkdf2_lower_bound_check : 1;
     unsigned int ecdh_cofactor_check : 1;
     unsigned int defer_tests : 1;
+    unsigned int rh_test_facilities : 1;
 } FIPS_OPTS;
 
 /* Pedantic FIPS compliance */
@@ -235,6 +239,7 @@ static const FIPS_OPTS pedantic_opts = {
     1, /* pbkdf2_lower_bound_check */
     1, /* ecdh_cofactor_check */
     0, /* defer_tests */
+    1, /* rh_test_facilities */
 };
 
 /* Default FIPS settings for backward compatibility */
@@ -270,6 +275,7 @@ static FIPS_OPTS fips_opts = {
     1, /* pbkdf2_lower_bound_check */
     0, /* ecdh_cofactor_check */
     0, /* defer_tests */
+    1, /* rh_test_facilities */
 };
 
 static int check_non_pedantic_fips(int pedantic, const char *name)
@@ -424,6 +430,7 @@ static int write_config_fips_section(BIO *out, const char *section,
                         "%s = %s\n"
                         "%s = %s\n"
                         "%s = %s\n"
+                        "%s = %s\n"
                         "%s = %s\n",
             section,
             OSSL_PROV_FIPS_PARAM_INSTALL_VERSION, VERSION_VAL,
@@ -455,7 +462,8 @@ static int write_config_fips_section(BIO *out, const char *section,
             OSSL_PROV_PARAM_X963KDF_KEY_CHECK, opts->x963kdf_key_check ? "1" : "0",
             OSSL_PROV_PARAM_X942KDF_KEY_CHECK, opts->x942kdf_key_check ? "1" : "0",
             OSSL_PROV_PARAM_PBKDF2_LOWER_BOUND_CHECK, opts->pbkdf2_lower_bound_check ? "1" : "0",
-            OSSL_PROV_PARAM_ECDH_COFACTOR_CHECK, opts->ecdh_cofactor_check ? "1" : "0")
+            OSSL_PROV_PARAM_ECDH_COFACTOR_CHECK, opts->ecdh_cofactor_check ? "1" : "0",
+            OSSL_PROV_PARAM_RH_TEST_FACILITIES_CHECK, opts->rh_test_facilities ? "1" : "0")
             <= 0
         || !print_mac(out, OSSL_PROV_FIPS_PARAM_MODULE_MAC, module_mac,
             module_mac_len)
@@ -777,6 +785,9 @@ int fipsinstall_main(int argc, char **argv)
             break;
         case OPT_DEFER_TESTS:
             fips_opts.defer_tests = 1;
+            break;
+        case OPT_RH_TEST_FACILITIES:
+            fips_opts.rh_test_facilities = 0;
             break;
         }
     }
