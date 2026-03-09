@@ -250,6 +250,12 @@ static int rsa_import(void *keydata, int selection, const OSSL_PARAM params[])
         ok = ok && ossl_rsa_fromdata(rsa, params, include_private);
     }
 
+#ifdef FIPS_MODULE
+    if ((selection & OSSL_KEYMGMT_SELECT_PUBLIC_KEY)
+        == OSSL_KEYMGMT_SELECT_PUBLIC_KEY)
+        ok = ok && ossl_rsa_validate_public(rsa);
+#endif
+
     return ok;
 }
 
