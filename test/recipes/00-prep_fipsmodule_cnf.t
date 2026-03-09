@@ -31,6 +31,7 @@ plan tests => 1;
 
 # Create the $fipsmoduleconf file
 ok(run(app(['openssl', 'fipsinstall', '-pedantic', '-defer_tests',
+            '-rh_test_facilities',
             '-module', $fipsmodule, '-provider_name', 'fips',
             '-section_name', 'fips_sect', '-out', $fipsmoduleconf])),
    "fips install");
