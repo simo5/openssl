@@ -150,6 +150,8 @@ static int rsa_init(void *vprsactx, void *vrsa, const OSSL_PARAM params[],
             OSSL_FIPS_IND_SETTABLE0, prsactx->libctx,
             prsactx->rsa, desc, protect))
         return 0;
+    if (!ossl_rsa_validate_public(prsactx->rsa))
+        return 0;
 #endif
     return 1;
 }
