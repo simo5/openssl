@@ -58,6 +58,9 @@ typedef struct {
     OSSL_LIB_CTX *libctx;
     RSA *rsa;
     int op;
+#ifdef FIPS_MODULE
+    int public_checked;
+#endif
     OSSL_FIPS_IND_DECLARE
 } PROV_RSA_CTX;
 
@@ -331,6 +334,14 @@ static int rsasve_generate(PROV_RSA_CTX *prsactx,
      */
     if (!rsasve_gen_rand_bytes(prsactx->rsa, secret, (int)nlen))
         return 0;
+
+#ifdef FIPS_MODULE
+    if (prsactx->public_checked == 0) {
+        if (!ossl_rsa_validate_public(prsactx->rsa))
+            return 0;
+        prsactx->public_checked = 1;
+    }
+#endif
 
     /* Step(3): out = RSAEP((n,e), z) */
     ret = RSA_public_encrypt((int)nlen, secret, out, prsactx->rsa,

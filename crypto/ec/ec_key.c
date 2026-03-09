@@ -301,6 +301,9 @@ static int ec_generate_key(EC_KEY *eckey, int pairwise_test)
     eckey->dirty_cnt++;
 
 #ifdef FIPS_MODULE
+    if (!ossl_ec_key_public_check(eckey, ctx))
+        goto err;
+
     pairwise_test = 1;
 #endif /* FIPS_MODULE */
 
