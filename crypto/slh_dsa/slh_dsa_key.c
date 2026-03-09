@@ -126,7 +126,8 @@ void ossl_slh_dsa_key_free(SLH_DSA_KEY *key)
         return;
 
     slh_dsa_key_hash_cleanup(key);
-    OPENSSL_cleanse(&key->priv, sizeof(key->priv) >> 1);
+    /* RH: In order to Zeroize PSPs for FIPS we just cleanse the whole buffer */
+    OPENSSL_cleanse(&key->priv, sizeof(key->priv));
     OPENSSL_free(key);
 }
 
@@ -387,7 +388,8 @@ int ossl_slh_dsa_generate_key(SLH_DSA_HASH_CTX *ctx, SLH_DSA_KEY *out,
 err:
     out->pub = NULL;
     out->has_priv = 0;
-    OPENSSL_cleanse(priv, secret_key_len);
+    /* RH: on error we cleanse all PSPs including public keys */
+    OPENSSL_cleanse(&out->priv, sizeof(out->priv));
     return 0;
 }
 
