@@ -131,6 +131,26 @@ int ossl_self_test_in_progress(self_test_id_t id);
 #define ST_ID_DIGEST_sha512_224 ST_ID_DIGEST_SHA512
 #define ST_ID_DIGEST_sha512_256 ST_ID_DIGEST_SHA512
 
+/*
+ * In order to ensure all internal variable are zeroized, we
+ * provide a macro that forces the allocation of enough stack
+ * to cover all the memory used by previously called functions
+ * and cleanse it, this will take care of zeroizing all values
+ * that internal computations may have be left on the stack.
+ *
+ * This is introduced initially for use of the ML-KEM
+ * implementation according to FIPS 203 requirements.
+ */
+#define FIPS_ZEROIZE_STACK(size) \
+    { \
+        char *zero = alloca(size); \
+        OPENSSL_cleanse(zero, size); \
+    }
+
+#else /* FIPS_MODULE */
+
+#define FIPS_ZEROIZE_STACK(size)
+
 #endif /* FIPS_MODULE */
 
 #endif
