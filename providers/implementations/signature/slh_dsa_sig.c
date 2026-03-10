@@ -244,6 +244,7 @@ static int slh_dsa_sign(void *vctx, unsigned char *sig, size_t *siglen,
     /* Only cleanse the temporary buffer generated for this signature. */
     if (opt_rand == add_rand)
         OPENSSL_cleanse(add_rand, sizeof(add_rand));
+    FIPS_ZEROIZE_STACK(8192);
     return ret;
 }
 
