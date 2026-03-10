@@ -243,6 +243,7 @@ static int slh_dsa_sign(void *vctx, unsigned char *sig, size_t *siglen,
         sig, siglen, sigsize);
     if (opt_rand != add_rand)
         OPENSSL_cleanse(opt_rand, n);
+    FIPS_ZEROIZE_STACK(8192);
     return ret;
 }
 
