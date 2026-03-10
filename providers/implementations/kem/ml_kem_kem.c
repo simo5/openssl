@@ -231,6 +231,7 @@ end:
         OPENSSL_cleanse(ctx->entropy, ML_KEM_RANDOM_BYTES);
         ctx->entropy = NULL;
     }
+    FIPS_ZEROIZE_STACK(8192)
     return ret;
 }
 
@@ -240,6 +241,7 @@ static int ml_kem_decapsulate(void *vctx, uint8_t *shsec, size_t *slen,
     PROV_ML_KEM_CTX *ctx = vctx;
     ML_KEM_KEY *key = ctx->key;
     size_t decap_slen = ML_KEM_SHARED_SECRET_BYTES;
+    int ret;
 
     if (!ossl_ml_kem_have_prvkey(key)) {
         ERR_raise(ERR_LIB_PROV, PROV_R_MISSING_KEY);
@@ -265,7 +267,9 @@ static int ml_kem_decapsulate(void *vctx, uint8_t *shsec, size_t *slen,
     }
 
     /* ML-KEM decap handles incorrect ciphertext lengths internally */
-    return ossl_ml_kem_decap(shsec, decap_slen, ctext, clen, key);
+    ret = ossl_ml_kem_decap(shsec, decap_slen, ctext, clen, key);
+    FIPS_ZEROIZE_STACK(8192)
+    return ret;
 }
 
 const OSSL_DISPATCH ossl_ml_kem_asym_kem_functions[] = {

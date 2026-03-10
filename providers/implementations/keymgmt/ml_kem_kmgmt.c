@@ -155,6 +155,7 @@ err:
     OPENSSL_cleanse((void *)secret, sizeof(secret));
     OPENSSL_cleanse((void *)out, sizeof(out));
     OPENSSL_clear_free(ctext, v->ctext_bytes);
+    FIPS_ZEROIZE_STACK(8192)
     return ret;
 }
 
@@ -373,6 +374,7 @@ static int check_prvenc(const uint8_t *prvenc, ML_KEM_KEY *key)
         && ossl_ml_kem_encode_private_key(buf, len, key))
         ret = memcmp(buf, prvenc, len) == 0;
     OPENSSL_clear_free(buf, len);
+    FIPS_ZEROIZE_STACK(8192)
     if (ret)
         return 1;
 
@@ -472,8 +474,11 @@ static int ml_kem_key_fromdata(ML_KEM_KEY *key,
         if (prvlen != 0 && !check_seed(seedenc, prvenc, key))
             return 0;
         if (!ossl_ml_kem_set_seed(seedenc, seedlen, key)
-            || !ossl_ml_kem_genkey(NULL, 0, key))
+            || !ossl_ml_kem_genkey(NULL, 0, key)) {
+            FIPS_ZEROIZE_STACK(8192)
             return 0;
+        }
+        FIPS_ZEROIZE_STACK(8192)
         return prvlen == 0 || check_prvenc(prvenc, key);
     } else if (prvlen != 0) {
         return ossl_ml_kem_parse_private_key(prvenc, prvlen, key);
@@ -825,13 +830,15 @@ static void *ml_kem_gen(void *vgctx, OSSL_CALLBACK *osslcb, void *cbarg)
 #ifdef FIPS_MODULE
         if (!ml_kem_pairwise_test(key, ML_KEM_KEY_FIXED_PCT)) {
             ossl_ml_kem_key_free(key);
-            return NULL;
+            key = NULL;
         }
+        FIPS_ZEROIZE_STACK(8192)
 #endif /* FIPS_MODULE */
         return key;
     }
 
     ossl_ml_kem_key_free(key);
+    FIPS_ZEROIZE_STACK(8192)
     return NULL;
 }
 
