@@ -21,6 +21,7 @@
 #include "internal/sizes.h"
 #include "internal/fips.h"
 #include "providers/implementations/signature/slh_dsa_sig.inc"
+#include "prov/securitycheck.h"
 
 #define SLH_DSA_MAX_ADD_RANDOM_LEN 32
 
@@ -72,6 +73,7 @@ typedef struct {
     /* The Algorithm Identifier of the signature algorithm */
     uint8_t aid_buf[OSSL_MAX_ALGORITHM_ID_SIZE];
     size_t aid_len;
+    OSSL_FIPS_IND_DECLARE
 } PROV_SLH_DSA_CTX;
 
 static void slh_dsa_freectx(void *vctx)
@@ -296,6 +298,17 @@ static int slh_dsa_set_ctx_params(void *vctx, const OSSL_PARAM params[])
         }
     }
 
+#ifdef FIPS_MODULE
+    if (!ossl_fips_self_testing()
+        && !ossl_self_test_in_progress(ST_ID_SIG_SLH_DSA_SHAKE_128F)
+        && !ossl_self_test_in_progress(ST_ID_SIG_SLH_DSA_SHA2_128F)
+        && p.entropy != NULL) {
+        if (!OSSL_FIPS_IND_ON_UNAPPROVED(pctx, OSSL_FIPS_IND_SETTABLE0,
+            pctx->libctx, "SLH-DSA", "Siggen",
+            ossl_fips_config_rh_test_facilities_check))
+            return 0;
+    }
+#endif
     if (p.entropy != NULL) {
         void *vp = pctx->add_random;
         size_t n = ossl_slh_dsa_key_get_n(pctx->key);
