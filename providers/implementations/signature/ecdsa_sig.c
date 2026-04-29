@@ -524,6 +524,17 @@ static int ecdsa_verify(void *vctx,
             return 0;
         return ecdsa_verify_message_final(ctx);
     }
+#ifdef FIPS_MODULE
+    /* sigVer is only approved if the digest is verified by the primitive
+     * in FIPS-140-3, so raw verify is not allowed */
+    if (ctx->mdctx == NULL)
+        if (!OSSL_FIPS_IND_ON_UNAPPROVED(ctx, OSSL_FIPS_IND_SETTABLE4,
+            ctx->libctx, "ECDSA RAW Signature Verification", "ECDSA sigVer",
+            ossl_fips_config_rh_raw_signature_check)) {
+            ERR_raise(ERR_LIB_PROV, PROV_R_INVALID_DIGEST);
+            return 0;
+        }
+#endif
     return ecdsa_verify_directly(ctx, sig, siglen, tbs, tbslen);
 }
 
