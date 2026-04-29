@@ -917,6 +917,19 @@ static int rsa_sign(void *vprsactx, unsigned char *sig, size_t *siglen,
         return rsa_signverify_message_update(prsactx, tbs, tbslen)
             && rsa_sign_message_final(prsactx, sig, siglen, sigsize);
     }
+#ifdef FIPS_MODULE
+    /* Only digest-sign is approved in FIPS 140-3 with padding,
+     * however it is allowed to raw sign w/o any padding or digest */
+    if (prsactx->pad_mode != RSA_NO_PADDING && prsactx->mdctx == NULL) {
+        if (!OSSL_FIPS_IND_ON_UNAPPROVED(prsactx, OSSL_FIPS_IND_SETTABLE4,
+            prsactx->libctx, "RSA RAW Signature Generation", "RSA sigGen",
+            ossl_fips_config_rh_raw_signature_check)) {
+            ERR_raise(ERR_LIB_PROV, PROV_R_INVALID_DIGEST);
+            return 0;
+        }
+    }
+
+#endif
     return rsa_sign_directly(prsactx, sig, siglen, sigsize, tbs, tbslen);
 }
 
@@ -1236,6 +1249,17 @@ static int rsa_verify(void *vprsactx,
         return rsa_verify_set_sig(prsactx, sig, siglen)
             && rsa_signverify_message_update(prsactx, tbs, tbslen)
             && rsa_verify_message_final(prsactx);
+#ifdef FIPS_MODULE
+    /* sigVer is only approved if the digest is verified by the primitive
+     * in FIPS-140-3, so raw verify is not allowed with any padding mode */
+    if (prsactx->mdctx == NULL)
+        if (!OSSL_FIPS_IND_ON_UNAPPROVED(prsactx, OSSL_FIPS_IND_SETTABLE4,
+            prsactx->libctx, "RSA RAW Signature Verification", "RSA sigVer",
+            ossl_fips_config_rh_raw_signature_check)) {
+            ERR_raise(ERR_LIB_PROV, PROV_R_INVALID_DIGEST);
+            return 0;
+        }
+#endif
     return rsa_verify_directly(prsactx, sig, siglen, tbs, tbslen);
 }
 
