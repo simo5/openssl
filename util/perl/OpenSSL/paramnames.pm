@@ -62,6 +62,7 @@ my %params = (
     'OSSL_PROV_PARAM_SIGNATURE_DIGEST_CHECK' => "signature-digest-check", # uint
     'OSSL_PROV_PARAM_RH_TEST_FACILITIES_CHECK' => "rh-test-facitlities-check", # uint
     'OSSL_PROV_PARAM_RH_RAW_SIGNATURE_CHECK' => "rh-raw-signature-check", # uint
+    'OSSL_PROV_PARAM_RH_HYBRID_KEM_CHECK' => "rh-hybrid-kem-check", # uint
 
 # Self test callback parameters
     'OSSL_PROV_PARAM_SELF_TEST_PHASE' =>  "st-phase",# utf8_string
