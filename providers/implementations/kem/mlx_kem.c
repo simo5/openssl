@@ -19,6 +19,8 @@
 #include "prov/mlx_kem.h"
 #include "prov/provider_ctx.h"
 #include "prov/providercommon.h"
+#include "prov/securitycheck.h"
+#include "internal/fips.h"
 
 static OSSL_FUNC_kem_newctx_fn mlx_kem_newctx;
 static OSSL_FUNC_kem_freectx_fn mlx_kem_freectx;
@@ -33,6 +35,8 @@ typedef struct {
     OSSL_LIB_CTX *libctx;
     MLX_KEY *key;
     int op;
+
+    OSSL_FIPS_IND_DECLARE
 } PROV_MLX_KEM_CTX;
 
 static void *mlx_kem_newctx(void *provctx)
@@ -235,6 +239,18 @@ static int mlx_kem_encapsulate(void *vctx, unsigned char *ctext, size_t *clen,
     }
 
     ret = 1;
+#ifdef FIPS_MODULE
+    /* Hybrid KEM must be marked non-approved due to a technicality for now */
+    {
+        PROV_MLX_KEM_CTX* fctx = (PROV_MLX_KEM_CTX *)vctx;
+        if (!OSSL_FIPS_IND_ON_UNAPPROVED(fctx, OSSL_FIPS_IND_SETTABLE1,
+            fctx->libctx, "Hybrid KEM", "KEM Encap",
+            ossl_fips_config_rh_hybrid_kem_check)) {
+            ERR_raise(ERR_LIB_PROV, PROV_R_NOT_SUPPORTED);
+            return 0;
+        }
+    }
+#endif
 end:
     /* Erase any partial shared secret on failure */
     if (ret == 0)
@@ -327,6 +343,18 @@ static int mlx_kem_decapsulate(void *vctx, uint8_t *shsec, size_t *slen,
     }
 
     ret = 1;
+#ifdef FIPS_MODULE
+    /* Hybrid KEM must be marked non-approved due to a technicality for now */
+    {
+        PROV_MLX_KEM_CTX* fctx = (PROV_MLX_KEM_CTX *)vctx;
+        if (!OSSL_FIPS_IND_ON_UNAPPROVED(fctx, OSSL_FIPS_IND_SETTABLE1,
+            fctx->libctx, "Hybrid KEM", "KEM Decap",
+            ossl_fips_config_rh_hybrid_kem_check)) {
+            ERR_raise(ERR_LIB_PROV, PROV_R_NOT_SUPPORTED);
+            return 0;
+        }
+    }
+#endif
 end:
     /* Erase any partial shared secret on failure */
     if (ret == 0)
