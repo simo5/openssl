@@ -513,6 +513,16 @@ static int mlx_kem_get_params(void *vkey, OSSL_PARAM params[])
         if (!OSSL_PARAM_set_size_t(p.maxsize, key->minfo->ctext_bytes + key->xinfo->pubkey_bytes))
             return 0;
 
+#ifdef FIPS_MODULE
+    {
+        /* Currently MLX is not approved */
+        int approved = 0;
+
+        if (p.ind != NULL && !OSSL_PARAM_set_int(p.ind, approved))
+            return 0;
+    }
+#endif
+
     if (!mlx_kem_have_pubkey(key))
         return 1;
 
