@@ -493,8 +493,11 @@ int SELF_TEST_post(SELF_TEST_POST_PARAMS *st, void *fips_global,
             }
         }
 
-        if ((st->defer_tests != NULL)
-            && strcmp(st->defer_tests, "1") == 0) {
+        /* we default to defer tests as older openssl versions do
+         * not know about the defer_tests parameter */
+        if (st->defer_tests == NULL
+            || (st->defer_tests != NULL
+                && strcmp(st->defer_tests, "1") == 0)) {
             /* Mark all non executed tests as deferred */
             for (int i = 0; i < ST_ID_MAX; i++) {
                 if (st_all_tests[i].state == SELF_TEST_STATE_INIT) {
