@@ -1650,6 +1650,11 @@ void ossl_ml_kem_key_reset(ML_KEM_KEY *key)
         OPENSSL_free(key->t);
     }
     key->d = key->z = key->seedbuf = key->encoded_dk = (uint8_t *)(key->s = key->m = key->t = NULL);
+
+#ifdef FIPS_MODULE
+    /* rho_pkhash is considered an SSP for FIPS */
+    OPENSSL_cleanse((void *)key->rho_pkhash, sizeof(key->rho_pkhash));
+#endif
 }
 
 /*
