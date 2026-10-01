@@ -391,6 +391,7 @@ err:
 static void set_fips_state(int state)
 {
     tsan_store(&FIPS_state, state);
+    OPENSSL_assert(state != FIPS_STATE_ERROR);
 }
 
 /* Return 1 if the FIPS self tests are running and 0 otherwise */
