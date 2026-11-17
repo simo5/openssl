@@ -34,6 +34,10 @@
 #include "internal/mem_alloc_utils.h"
 #include "internal/thread_once.h"
 #include "internal/threads_common.h"
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <unistd.h>
 
 static const char FIPS_DEFAULT_PROPERTIES[] = "provider=fips,fips=yes";
 static const char FIPS_UNAPPROVED_PROPERTIES[] = "provider=fips,fips=no";
@@ -205,6 +209,48 @@ static const OSSL_PARAM *fips_gettable_params(void *provctx)
     return fips_param_types;
 }
 
+static int check_fips_enabled(void)
+{
+    char buf;
+    int fd;
+    ssize_t ret;
+
+    fd = open("/proc/sys/crypto/fips_enabled", O_RDONLY);
+    if (fd < 0)
+        return -1;
+    do {
+        ret = read(fd, &buf, 1);
+    } while (ret < 0 && errno == EINTR);
+    close(fd);
+    if (ret == 1) {
+        if (buf == '0')
+            return 0;
+        if (buf == '1')
+            return 1;
+    }
+    return -1;
+}
+
+#ifdef KRYOPTIC_FIPS_VENDOR
+static const char fips_name[] = KRYOPTIC_FIPS_VENDOR;
+#else
+static const char fips_name[] = FIPS_VENDOR;
+#endif
+
+#ifdef KRYOPTIC_FIPS_VERSION
+static const char fips_version[] = KRYOPTIC_FIPS_VERSION;
+static const char fips_version_off[] = KRYOPTIC_FIPS_VERSION " fips off";
+#else
+static const char fips_version[] = OPENSSL_VERSION_STR;
+static const char fips_version_off[] = OPENSSL_VERSION_STR " fips off";
+#endif
+
+#ifdef KRYOPTIC_FIPS_BUILD
+static const char fips_buildinfo[] = KRYOPTIC_FIPS_BUILD;
+#else
+static const char fips_buildinfo[] = OPENSSL_FULL_VERSION_STR;
+#endif
+
 static int fips_get_params(void *provctx, OSSL_PARAM params[])
 {
     OSSL_PARAM *p;
@@ -212,25 +258,19 @@ static int fips_get_params(void *provctx, OSSL_PARAM params[])
         OSSL_LIB_CTX_FIPS_PROV_INDEX);
 
     p = OSSL_PARAM_locate(params, OSSL_PROV_PARAM_NAME);
-#ifdef KRYOPTIC_FIPS_VENDOR
-    if (p != NULL && !OSSL_PARAM_set_utf8_ptr(p, KRYOPTIC_FIPS_VENDOR))
-#else
-    if (p != NULL && !OSSL_PARAM_set_utf8_ptr(p, FIPS_VENDOR))
-#endif
+    if (p != NULL && !OSSL_PARAM_set_utf8_ptr(p, fips_name))
         return 0;
     p = OSSL_PARAM_locate(params, OSSL_PROV_PARAM_VERSION);
-#ifdef KRYOPTIC_FIPS_VERSION
-    if (p != NULL && !OSSL_PARAM_set_utf8_ptr(p, KRYOPTIC_FIPS_VERSION))
-#else
-    if (p != NULL && !OSSL_PARAM_set_utf8_ptr(p, OPENSSL_VERSION_STR))
-#endif
-        return 0;
+    if (p != NULL) {
+        const char *version = fips_version;
+
+        if (check_fips_enabled() == 0)
+            version = fips_version_off;
+        if (!OSSL_PARAM_set_utf8_ptr(p, version))
+            return 0;
+    }
     p = OSSL_PARAM_locate(params, OSSL_PROV_PARAM_BUILDINFO);
-#ifdef KRYOPTIC_FIPS_BUILD
-    if (p != NULL && !OSSL_PARAM_set_utf8_ptr(p, KRYOPTIC_FIPS_BUILD))
-#else
-    if (p != NULL && !OSSL_PARAM_set_utf8_ptr(p, OPENSSL_FULL_VERSION_STR))
-#endif
+    if (p != NULL && !OSSL_PARAM_set_utf8_ptr(p, fips_buildinfo))
         return 0;
     p = OSSL_PARAM_locate(params, OSSL_PROV_PARAM_STATUS);
     if (p != NULL && !OSSL_PARAM_set_int(p, ossl_prov_is_running()))
